@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Master Plan ฝูง.602 · 3M Calendar</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='5' width='18' height='16' rx='2' fill='%231F4E8C'/%3E%3Crect x='3' y='5' width='18' height='4' fill='%23C62828'/%3E%3C/svg%3E">
+<style>html{color-scheme:light}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}*,*::before,*::after{box-sizing:border-box}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<style>
+/* Layout: toolbar band over a printed-sheet replica (always paper white, like the Excel original), one grid per month */
+:root{
+  --bg:#EEF1F5; --fg:#16202E; --muted:#5B6878; --line:#C9D1DB; --panel:#FFFFFF; --accent:#1F4E8C; --accent-fg:#FFFFFF; --danger:#C62828;
+  --paper:#FFFFFF; --ink:#000000; --grid:#000000; --gridStrong:#000000; --dayHead:#D6DCE4; --monthHead:#DBDBDB; --void:#000000; --off:#E3E3E3;
+  --f-sheet:"TH SarabunPSK","TH Sarabun New","Sarabun",sans-serif;
+  --f-ui:"IBM Plex Sans Thai","Sarabun",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#11161D;--fg:#E4E9EF;--muted:#98A3B1;--line:#2A333F;--panel:#18202A;--accent:#7FA8E0;--accent-fg:#0D1520;--danger:#FF6B6B;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#11161D;--fg:#E4E9EF;--muted:#98A3B1;--line:#2A333F;--panel:#18202A;--accent:#7FA8E0;--accent-fg:#0D1520;--danger:#FF6B6B;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:14px}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 32px;display:flex;flex-direction:column;gap:12px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.bar h1{font-size:16px;font-weight:600;margin:0;margin-right:auto;text-wrap:balance}
+.range{display:flex;align-items:center;gap:4px;font-weight:500}
+.range span{min-width:13em;text-align:center;font-variant-numeric:tabular-nums}
+button,.btn{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:6px;padding:6px 11px;cursor:pointer;line-height:1.2}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+button.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+button.icon{padding:6px 9px}
+button.danger{color:var(--danger);border-color:var(--danger)}
+button:disabled{opacity:.45;cursor:default}
+.hint{color:var(--muted);font-size:12.5px}
+.saving{font-size:12.5px;color:var(--muted);min-width:6em}
+
+.sheetScroll{overflow-x:auto;border:1px solid var(--line);border-radius:4px;background:var(--paper)}
+.sheet{min-width:1520px;background:var(--paper);color:var(--ink);font-family:var(--f-sheet);padding:10px 10px 14px}
+.title{text-align:center;font-weight:700;font-size:calc(16pt*var(--fs));line-height:1.25;padding:2px 0 8px}
+.title .sub{display:block}
+.title input{font:inherit;text-align:center;border:1px dashed var(--grid);background:transparent;color:inherit;width:16em}
+
+.month{display:grid;grid-template-columns:114px var(--gut,0px) repeat(31,minmax(44px,1fr));grid-auto-rows:minmax(calc(20pt*var(--fs)*1.33),auto);border:2px solid #000;margin-bottom:10px;position:relative}
+.editing .month{--gut:30px}
+.cell{border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);min-width:0}
+.cell.lc,.ev.lc,.dh.lc{border-right:0}
+.cell.lr,.ev.lr,.mlabel.lr,.gut.lr{border-bottom:0}
+.cell.void{background:var(--void);border-right-color:#000;border-bottom-color:#000}
+.cell.off.free{background:var(--off)}
+.editing .dh:not(.void){cursor:pointer}
+.editing .dh:not(.void):hover{outline:2px solid #1F4E8C;outline-offset:-2px}
+.editing .cell.free:not(.void){cursor:copy}
+.editing .cell.free:not(.void):hover{background:rgba(31,78,140,.08)}
+.dh{background:var(--dayHead);font-weight:700;text-align:center;font-size:calc(12pt*var(--fs)*1.333);display:flex;align-items:center;justify-content:center;border-right:2px solid #000;border-bottom:2px solid #000}
+.dh.today{box-shadow:inset 0 -3px 0 #C00000}
+.mlabel{background:var(--monthHead);font-weight:700;font-size:calc(16pt*var(--fs)*1.333);padding:2px 3px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.15;border-right:2px solid #000;border-bottom:2px solid #000}
+.mlabel span{white-space:nowrap}
+.gut{display:none;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-right:1px solid #BFC5CC;border-bottom:1px solid #BFC5CC;background:#F6F7F9}
+.editing .gut{display:flex}
+.gut button{font-family:var(--f-ui);font-size:11px;padding:0;width:20px;height:16px;line-height:14px;border-radius:3px;background:#fff;color:#444;border-color:#C5CBD3}
+.gut button.del:hover,.gut button.del.arm{background:#C62828;color:#fff;border-color:#C62828}
+.gut button.del.arm{width:26px}
+.ev{position:relative;z-index:2;font-size:var(--evfs,16px);margin:0;border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre-line;line-height:1.05;padding:1px 3px;overflow:hidden;min-width:0;cursor:pointer;word-break:normal;overflow-wrap:normal}
+.ev:hover{outline:2px solid #1F4E8C;outline-offset:-2px;z-index:4}
+.ev.dragging{opacity:.75;outline:2px dashed #1F4E8C;z-index:6}
+.ev .rz{position:absolute;top:0;bottom:0;width:12px;cursor:ew-resize;display:none;z-index:3;touch-action:none}
+.ev .rz.r{right:0}.ev .rz.l{left:0}
+.ev .rz::after{content:"";position:absolute;top:50%;height:min(70%,22px);transform:translateY(-50%);width:4px;border-radius:2px;background:#1F4E8C;box-shadow:0 0 0 1px #fff}
+.ev .rz.r::after{right:2px}.ev .rz.l::after{left:2px}
+.ev .rz.t,.ev .rz.b{left:12px;right:12px;width:auto;height:10px;bottom:auto;cursor:ns-resize}
+.ev .rz.t{top:0}.ev .rz.b{top:auto;bottom:0}
+.ev .rz.t::after,.ev .rz.b::after{top:auto;left:50%;transform:translateX(-50%);height:4px;width:min(60%,26px)}
+.ev .rz.t::after{top:2px}.ev .rz.b::after{bottom:2px}
+.editing .ev .rz.t:hover::after,.editing .ev .rz.b:hover::after{width:min(60%,26px);height:5px}
+.editing .ev .rz{display:block}
+.editing .ev .rz:hover::after{background:#C62828;width:5px}
+@media (pointer:coarse){.ev .rz{width:20px}.ev .rz.t,.ev .rz.b{width:auto;height:16px;left:20px;right:20px}}
+.editing .ev{cursor:grab;touch-action:none}
+.past{background:rgba(255,0,0,.30);pointer-events:none;z-index:5}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;font-size:calc(12pt*var(--fs)*1.333);padding:6px 2px 4px}
+.legend b{margin-right:6px}
+.sw{display:inline-flex;align-items:center;gap:6px}
+.sw i{display:inline-block;width:42px;height:16px;border:1px solid #000}
+.notes{font-size:calc(12pt*var(--fs)*1.333);padding:6px 0 0;display:grid;grid-template-columns:max-content minmax(0,1fr);row-gap:0}
+.notes .nlab,.notes .ntxt{padding:3px 4px;min-height:1.5em;display:flex;align-items:center}
+.notes .ntxt{display:block}
+.notes .nlab{white-space:nowrap;padding-right:14px}
+.notes .nl{grid-column:1/-1;display:grid;grid-template-columns:minmax(9em,15em) auto minmax(0,46em) auto auto;justify-content:start;gap:6px;align-items:center;padding:2px 0}
+.notes input[type=text]{font:inherit;border:1px dashed var(--grid);background:transparent;padding:1px 4px;min-width:0}
+.notes .nl input{width:100%;box-sizing:border-box}
+.notes .nl{min-width:0}
+.notes .nadd{grid-column:1/-1;padding-top:4px}
+.notes .nl button{font-family:var(--f-ui);font-size:11px;padding:2px 6px}
+.exportHost{position:absolute;left:-40000px;top:0}
+.tools{display:flex;flex-wrap:wrap;gap:6px}
+[hidden]{display:none!important}
+.lock{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.lockbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:28px 24px;width:min(340px,100%);display:flex;flex-direction:column;gap:10px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+.lockmark{color:var(--accent);display:flex;justify-content:center}
+.lockbox h2{margin:0;font-size:18px;font-weight:600}
+.lockbox p{margin:0 0 6px;color:var(--muted);font-size:13.5px}
+.lockbox input{font:inherit;font-size:15px;padding:9px 11px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg);text-align:center}
+.lockbox button{padding:9px 12px;font-size:14.5px}
+.lockbox .lbl{text-align:left;font-size:12.5px;color:var(--muted);margin:4px 0 -4px}
+.lockbox input::placeholder{color:var(--muted);opacity:.55}
+.lockerr{min-height:1.2em;color:var(--danger);font-size:13px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.people{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:12.5px;color:var(--muted)}
+.pchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:999px;padding:3px 10px 3px 6px}
+.pchip i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.pchip b{font-weight:600;font-size:11px;color:#fff;border-radius:4px;padding:1px 5px}
+.sheet{position:relative}
+.pov{position:absolute;pointer-events:none;z-index:8;border:2.5px solid;border-radius:2px;box-sizing:border-box}
+.ptag{position:absolute;left:-2px;top:-17px;font-family:var(--f-ui);font-size:11px;line-height:15px;color:#fff;padding:0 6px;border-radius:3px 3px 3px 0;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.lockbar{background:#E8F0FB;color:#173A6B;border:1px solid #9DB8E0;border-radius:8px;padding:9px 12px;font-size:13.5px}
+.lockbar.mine{background:#E7F4EA;color:#1D4D2B;border-color:#9CCBA8}
+.expbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;background:#FFF4D6;color:#5A3B00;border:1px solid #E8B64C;border-radius:8px;padding:9px 12px;font-size:13.5px}
+.expbar span{flex:1;min-width:14em}
+.who{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:13px;color:var(--muted)}
+.who input::placeholder,#nmIn::placeholder{color:var(--muted);opacity:.55;font-weight:400}
+.who input[readonly]{background:var(--bg);cursor:default}
+.who input{font:inherit;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 9px;width:13em;max-width:60vw}
+.who.need input{border-color:var(--danger);box-shadow:0 0 0 2px color-mix(in srgb,var(--danger) 25%,transparent)}
+.logs{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--line)}
+.lg{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:8px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.lg time{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.lg .by{font-weight:600}
+.lg .acc{color:var(--muted);font-weight:400;font-size:12px}
+.lg .act{grid-column:2}
+.lg .det{grid-column:2;color:var(--muted);word-break:break-word}
+.lastby{font-size:12.5px;color:var(--muted)}
+.tools button{font-weight:600;letter-spacing:.02em;font-size:12.5px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:8px;z-index:80;font-size:13.5px;max-width:calc(100% - 32px)}
+.pv{position:fixed;inset:0;z-index:60;background:rgba(10,16,24,.6);display:flex;flex-direction:column}
+.pvbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;background:var(--panel);color:var(--fg);padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));padding-top:calc(10px + env(safe-area-inset-top,0px))}
+.pvbar h2{margin:0 auto 0 0;font-size:15px;font-weight:600}
+.pvbar select{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.pvbody{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px))}
+.paper{background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.35);position:relative;flex:none}
+.paper img{position:absolute;display:block;max-width:none}
+.pvinfo{color:#E8EDF3;font-size:12.5px;text-align:center;padding:0 16px 6px}
+.snaps{display:flex;flex-direction:column;gap:6px}
+.snap{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:7px 9px}
+.snap span{flex:1;font-variant-numeric:tabular-nums}
+.empty{padding:28px;text-align:center;font-family:var(--f-ui);color:#555}
+
+/* editor */
+.scrim{position:fixed;inset:0;background:rgba(10,16,24,.45);z-index:50;display:flex;justify-content:flex-end}
+.panel{background:var(--panel);color:var(--fg);width:min(420px,100%);height:100%;overflow:auto;padding:18px max(18px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) 18px;display:flex;flex-direction:column;gap:14px;box-shadow:-8px 0 24px rgba(0,0,0,.2)}
+.panel h2{margin:0;font-size:17px;font-weight:600}
+.f{display:flex;flex-direction:column;gap:5px}
+.f>label,.f>.lb{font-size:12.5px;color:var(--muted);font-weight:500}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.panel input[type=text],.panel input[type=number],.panel select,.panel textarea{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);width:100%;box-sizing:border-box;min-width:0}
+.panel textarea{font-family:var(--f-sheet);font-size:18px;min-height:64px;resize:vertical}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{padding:5px 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{width:28px;height:26px;border-radius:5px;border:1px solid var(--line);padding:0;cursor:pointer;box-sizing:border-box}
+.chip.sel{outline:2px solid var(--accent);outline-offset:2px}
+.chip.auto{width:auto;padding:0 9px;font-size:12.5px;line-height:1;display:inline-flex;align-items:center;justify-content:center;background:var(--bg);color:var(--fg)}
+.chips input[type=color]{width:34px;height:26px;border:1px solid var(--line);border-radius:5px;padding:0;background:none}
+.preview{border:1px solid #BFC5CC;background:#fff;padding:8px;display:flex;justify-content:center}
+.preview div{font-family:var(--f-sheet);padding:3px 10px;white-space:pre-line;text-align:center;line-height:1.05;min-width:80px}
+.acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.panel>h2{order:-2}
+.panel>.acts{order:-1;position:sticky;top:-18px;z-index:3;background:var(--panel);margin:-6px 0 0;padding:8px 0 10px;border-bottom:1px solid var(--line)}
+.acts .sp{flex:1}
+.ro{font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.panel{animation:slide .16s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
+</style>
+
+<style>
+@font-face{font-family:"TH SarabunPSK";src:url(fonts/THSarabun.ttf) format("truetype");font-weight:400;font-style:normal;font-display:block}
+@font-face{font-family:"TH SarabunPSK";src:url(fonts/THSarabun-Bold.ttf) format("truetype");font-weight:700;font-style:normal;font-display:block}
+@font-face{font-family:"TH SarabunPSK";src:url(fonts/THSarabun-Italic.ttf) format("truetype");font-weight:400;font-style:italic;font-display:block}
+@font-face{font-family:"TH SarabunPSK";src:url(fonts/THSarabun-BoldItalic.ttf) format("truetype");font-weight:700;font-style:italic;font-display:block}
+</style>
+</head>
+<body>
+<div class="lock" id="lock" hidden>
+  <form class="lockbox" id="lockForm" autocomplete="off">
+    <div class="lockmark" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></div>
+    <h2>Master Plan ฝูง.602</h2>
+    <p>ใส่ชื่อผู้ใช้งานและรหัสเพื่อเปิดใช้งาน</p>
+    <label for="lockName" class="lbl">ชื่อผู้ใช้งาน</label>
+    <input id="lockName" type="text" placeholder="ร.อ.ธัญชนิต จินตภากร" autocomplete="name" maxlength="60">
+    <label for="lockIn" class="lbl">รหัสเปิดใช้งาน</label>
+    <input id="lockIn" type="password" placeholder="รหัสเปิดใช้งาน" autocomplete="current-password">
+    <div class="lockerr" id="lockErr" role="alert"></div>
+    <button class="primary" type="submit">เปิดใช้งาน</button>
+  </form>
+</div>
+<div class="wrap" id="app">
+  <div class="bar">
+    <h1>Master Plan · ภารกิจ + แผนซ่อมบำรุง 3 เดือน</h1>
+    <div class="range">
+      <button class="icon" id="prev" aria-label="เลื่อนย้อน 1 เดือน">‹</button>
+      <span id="rangeLbl"></span>
+      <button class="icon" id="next" aria-label="เลื่อนไป 1 เดือน">›</button>
+    </div>
+    <button id="now">ช่วงปัจจุบัน</button>
+    <button id="editBtn" hidden>โหมดแก้ไข</button>
+    <button id="addBtn" class="primary" hidden>+ เพิ่มภารกิจ</button>
+    <span class="saving" id="saving"></span>
+  </div>
+  <div class="tools">
+    <button id="saveBtn" hidden title="บันทึกฉบับนี้และปรับวันที่ Update เป็นวันนี้">SAVE</button>
+    <button id="undoBtn" hidden title="ย้อนแผนกลับไปเหมือนตอนกด SAVE ครั้งล่าสุด">ยกเลิกการแก้ไข</button>
+    <button id="snapBtn" hidden title="ดูหรือเรียกคืนฉบับที่บันทึกไว้">ฉบับที่บันทึก</button>
+    <button id="pvBtn">PREVIEW</button>
+    <button id="xlsBtn">EXPORT TO EXCEL</button>
+    <button id="pdfBtn">EXPORT TO PDF</button>
+    <button id="lockBtn" title="ล็อกหน้านี้ ต้องใส่รหัสใหม่">ล็อก</button>
+    <button id="logBtn" hidden title="ดูว่าใครแก้ไขอะไร เมื่อไร">ประวัติการแก้ไข</button>
+    <label class="who" id="whoWrap" hidden title="ใช้ชื่อผู้ใช้งานจากหน้าเปิดใช้งาน เปลี่ยนชื่อได้โดยกด ล็อก แล้วเข้าใหม่"><span>ผู้บันทึก</span><input id="recName" type="text" readonly tabindex="-1" placeholder="ร.อ.ธัญชนิต จินตภากร"></label>
+  </div>
+  <div class="people" id="people" hidden aria-live="polite"></div>
+  <div class="lockbar" id="lockBar" hidden role="status"></div>
+  <div class="expbar" id="expBar" hidden role="alert"><span id="expTxt"></span><button id="expSave" class="primary">SAVE ตอนนี้</button></div>
+  <div class="hint" id="hint"></div>
+  <div class="sheetScroll"><div class="sheet" id="sheet"><div class="empty">กำลังโหลดแผน…</div></div></div>
+</div>
+<div id="modal"></div>
+<div id="modal2"></div>
+
+<script src="config.js"></script>
+<script>
+(function(){
+const TYPES={
+  domestic:{label:'ภารกิจภายในประเทศ',fill:'#E2F0DB'},
+  a32x:{label:'A319/A320',fill:'#B4C6E7'},
+  a340:{label:'A340',fill:'#F5B084'},
+  ssj:{label:'SSJ',fill:'#FFFF00'},
+  maint:{label:'แผนซ่อมบำรุง / บ.ไม่ FMC',fill:'#FF0000',text:'#FFFFFF'},
+  repair:{label:'บ.เข้าตรวจซ่อมอื่นๆ',fill:'#FF0000'},
+  other:{label:'อื่นๆ (กำหนดสีพื้นเอง)',fill:'#FFFFFF'}
+};
+const LEGEND=['domestic','a32x','a340','ssj','maint','repair'];
+const STATUS={normal:'ปกติ',pending:'รอยืนยัน',cancelled:'ยกเลิก'};
+const TEXT_SW=['#000000','#FFFFFF','#FF0000','#0070C0','#00B050','#7030A0','#C65911'];
+const FILL_SW=['#B24FFF','#FBE5D6','#FFC000','#FFFFFF','#DBDBDB','#FFFF00','#E2F0DB','#B4C6E7','#F5B084','#FF0000'];
+const MONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const TH='๐๑๒๓๔๕๖๗๘๙';
+const thd=n=>String(n).replace(/\d/g,d=>TH[d]);
+const pad=n=>String(n).padStart(2,'0');
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// font: TH SarabunPSK if installed, else Sarabun scaled to the same visual size
+function hasFont_unused(n){try{const c=document.createElement('canvas').getContext('2d');const s='ภารกิจแผนซ่อมบำรุง 905 บน.41';c.font='40px monospace';const a=c.measureText(s).width;c.font='40px "'+n+'",monospace';return c.measureText(s).width!==a}catch(e){return false}}
+// TH SarabunPSK is embedded in the page (all four styles), so sizes match the Excel original 1:1
+document.documentElement.style.setProperty('--fs',1);
+
+let REC='';try{REC=localStorage.getItem('mp_name')||''}catch(e){}
+// ---------- server: Google Apps Script web app (URL in config.js) ----------
+const CONF=window.MP_CONFIG||{};
+const TAB='t'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); // this open tab
+let TOKEN='',TOKEN_EXP=0;
+try{const t=JSON.parse(localStorage.getItem('mp_tok')||'null');if(t&&t.exp>Date.now()){TOKEN=t.token;TOKEN_EXP=t.exp}}catch(e){}
+async function api(action,payload){
+  if(!CONF.apiUrl)throw {code:'no_api',message:'ยังไม่ได้ตั้งค่า apiUrl ในไฟล์ config.js'};
+  let res,j;
+  try{res=await fetch(CONF.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action,token:TOKEN,tab:TAB},payload||{}))})}
+  catch(e){throw {code:'network',message:'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจสอบอินเทอร์เน็ต'}}
+  try{j=await res.json()}catch(e){throw {code:'network',message:'เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง'}}
+  if(j&&j.error){if(j.error.code==='auth')setTimeout(onAuthLost,0);throw j.error}
+  return j;
+}
+// writes from one burst of actions go to the server as one batch
+let Q=[],Qp=null;
+function enqueue(op){Q.push(op);if(!Qp)Qp=new Promise(r=>setTimeout(r,40)).then(flushQ);return Qp}
+async function flushQ(){const ops=Q;Q=[];Qp=null;if(!ops.length)return;const r=await api('write',{ops});if(r&&r.ver)S.ver=r.ver;scheduleRender();return r}
+let renderT=0;function scheduleRender(){clearTimeout(renderT);renderT=setTimeout(()=>{api('render').catch(()=>{})},3000)}
+function blobToB64(b){return new Promise((ok,no)=>{const fr=new FileReader();fr.onload=()=>ok(String(fr.result).split(',')[1]||'');fr.onerror=no;fr.readAsDataURL(b)})}
+async function loadState(){
+  const r=await api('load');const o={};Object.values(r.state.events||{}).forEach(e=>{o[e.id]=e});
+  S.events=o;S.months=r.state.months||{};S.settings=Object.assign({unit:'แผนภารกิจ',notes:[]},r.state.settings||{});
+  const had=lockMine();S.lockDoc=r.lock;S.ver=r.ver;S.db=true;S.loaded=true;
+  if(had&&!lockMine()&&S.editing){S.editing=false;toast('สิทธิ์แก้ไขหมดอายุ ต้องกดโหมดแก้ไขใหม่',5000)}
+  if(!drag)render();if(draft)updPreview();
+}
+function onAuthLost(){TOKEN='';TOKEN_EXP=0;try{localStorage.removeItem('mp_tok')}catch(e){}S.editing=false;draft=null;drawEditor();showLock(true);const e=$('lockErr');if(e)e.textContent='หมดเวลาใช้งาน กรุณาใส่รหัสใหม่'}
+const S={events:{},months:{},settings:null,offset:0,editing:false,canWrite:false,db:null,loaded:false,armed:null,pending:0};
+// edit mode always starts off: editing needs the one-at-a-time edit lock
+
+function today(){const d=new Date();return{y:d.getFullYear(),m:d.getMonth()+1,d:d.getDate()}}
+function mkey(y,m){return y+'-'+pad(m)}
+function windowMonths(){const t=today();const out=[];for(let i=0;i<3;i++){let mm=t.m-1+S.offset+i;const y=t.y+Math.floor(mm/12);mm=((mm%12)+12)%12;out.push({y,m:mm+1,key:mkey(y,mm+1),days:new Date(y,mm+1,0).getDate()})}return out}
+function evsOf(k){return Object.values(S.events).filter(e=>e.month===k)}
+function lanesOf(k){const m=S.months[k];let need=0;evsOf(k).forEach(e=>need=Math.max(need,e.lane+(e.rows||1)));return Math.max(m&&m.lanes?m.lanes:6,need,1)}
+function textColor(e){if(e.status==='cancelled')return'#FF0000';if(e.color)return e.color;return (TYPES[e.type]||TYPES.other).text||'#000000'}
+function fillColor(e){if(e.fill)return e.fill;return (TYPES[e.type]||TYPES.other).fill}
+function label(e){return e.text+(e.status==='cancelled'?' (ยกเลิก)':e.status==='pending'?' (รอยืนยัน)':'')}
+function fsz(e){return 'calc('+(e.size||12)+'pt*var(--fs)*1.333)'}
+
+function setSaving(d){S.pending+=d;$('saving').textContent=S.pending>0?'กำลังบันทึก…':(S._err?S._err:'')}
+async function w(fn){setSaving(1);S._err='';try{await fn()}catch(e){
+  if(e&&e.code==='not_lock_holder'){S._err='ไม่ได้ถือสิทธิ์แก้ไข';S.editing=false;S.lockDoc=null;toast('สิทธิ์แก้ไขหมดแล้ว อาจมีผู้อื่นกำลังแก้ไข โหลดข้อมูลล่าสุดให้แล้ว',6000)}
+  else if(e&&e.code==='auth'){S._err=''}
+  else{S._err='บันทึกไม่สำเร็จ';toast('บันทึกไม่สำเร็จ: '+((e&&e.message)||'')+' · โหลดข้อมูลล่าสุดให้แล้ว',6000)}
+  loadState().catch(()=>{});
+}finally{setSaving(-1)}}
+async function putEvent(id,data){S.events[id]=Object.assign({id},data);render();await w(()=>enqueue({c:'events',op:'set',id,data:stripId(data)}))}
+function stripId(e){const o=Object.assign({},e);delete o.id;return o}
+async function patchMany(list){
+  list.forEach(p=>S.events[p.id]=Object.assign({},S.events[p.id],p.data));render();
+  if(list.length)await w(()=>Promise.all(list.map(p=>enqueue({c:'events',op:'update',id:p.id,data:p.data}))));
+}
+async function delEvent(id){delete S.events[id];render();await w(()=>enqueue({c:'events',op:'delete',id}))}
+async function setLanes(k,n){S.months[k]=Object.assign({},S.months[k],{lanes:n});render();await w(()=>enqueue({c:'months',op:'set',id:k,data:{lanes:n}}))}
+async function saveSettings(patch){S.settings=Object.assign({},S.settings,patch);render();await w(()=>enqueue({c:'meta',op:'set',id:'settings',data:S.settings}))}
+
+// ---------- one editor at a time ----------
+// locks/edit holds {holder, by, uid, until}. Claiming goes through a short db lease so two people cannot claim at once.
+const LOCK_TTL=90e3,IDLE_MS=10*60e3;
+let lastAct=Date.now();['pointerdown','keydown','wheel'].forEach(t=>document.addEventListener(t,()=>{lastAct=Date.now()},{passive:true,capture:true}));
+function lockMine(){const L=S.lockDoc;return !!(L&&L.tab===TAB&&L.until>Date.now())}
+function lockOther(){const L=S.lockDoc;return (L&&L.tab&&L.tab!==TAB&&L.until>Date.now())?L:null}
+function canEdit(){return S.canWrite&&lockMine()}
+async function getLock(){
+  if(!S.db||!S.canWrite)return false;if(lockMine())return true;
+  try{const r=await api('lock',{mode:'acquire'});S.lockDoc=r.lock;render();return !!r.ok}catch(e){return false}
+}
+async function releaseLock(){if(!lockMine())return;S.lockDoc=null;render();try{await api('lock',{mode:'release'})}catch(e){}}
+function needsLock(){return S.editing||!!draft||!!NF||S._busy}
+function maybeRelease(){setTimeout(()=>{if(lockMine()&&!needsLock())releaseLock()},0)}
+async function withLock(fn){ // for one-off actions (SAVE, undo, restore) outside edit mode
+  if(!(await getLock())){lockBusyToast();return}
+  S._busy=true;try{await fn()}finally{S._busy=false;maybeRelease()}
+}
+function lockBusyToast(){const o=lockOther();toast(o?(o.by||'ผู้ใช้อื่น')+' กำลังแก้ไขอยู่ ดูได้อย่างเดียวจนกว่าจะแก้เสร็จ':'เริ่มแก้ไขไม่ได้ ลองใหม่อีกครั้ง',4500)}
+setInterval(async()=>{ // keep the lock alive while working; give it up when idle
+  if(!lockMine())return;
+  if(Date.now()-lastAct>IDLE_MS&&!draft&&!NF){S.editing=false;await releaseLock();toast('ไม่มีการใช้งาน 10 นาที ออกจากโหมดแก้ไขแล้ว ผู้อื่นแก้ไขต่อได้',6000);return}
+  if(!needsLock()){releaseLock();return}
+  try{const r=await api('lock',{mode:'renew'});S.lockDoc=r.lock;if(!r.ok&&S.editing){S.editing=false;toast('สิทธิ์แก้ไขหมดอายุ ต้องกดโหมดแก้ไขใหม่',5000)}render()}catch(e){}
+},30e3);
+window.addEventListener('pagehide',()=>{try{if(TOKEN&&CONF.apiUrl&&navigator.sendBeacon)navigator.sendBeacon(CONF.apiUrl,new Blob([JSON.stringify({action:'leave',token:TOKEN,tab:TAB})],{type:'text/plain'}))}catch(e){}});
+function renderLockBar(){
+  const b=$('lockBar');if(!b)return;const o=lockOther();
+  if(o&&S.canWrite){const x=new Date(o.since||Date.now());b.className='lockbar';b.hidden=false;b.textContent=(o.by||'ผู้ใช้อื่น')+' กำลังแก้ไขแผนอยู่ (ตั้งแต่ '+pad(x.getHours())+':'+pad(x.getMinutes())+' น.) · ระหว่างนี้คุณดูได้อย่างเดียว แผนจะอัปเดตให้เห็นทันที และแก้ไขได้เมื่อเขาแก้เสร็จ';}
+  else if(lockMine()){b.className='lockbar mine';b.hidden=false;b.textContent='คุณกำลังแก้ไขแผน ผู้อื่นดูได้อย่างเดียว · กด "เสร็จสิ้นการแก้ไข" เมื่อแก้เสร็จ เพื่อให้คนอื่นแก้ต่อได้';}
+  else b.hidden=true;
+}
+
+// ---------- who is here (live, like Google Sheets) ----------
+// Each open tab shares {name, mode, ev, cell}; others see a coloured frame with the name on that mission or cell.
+let ROOM=null,PEERS=[],PROF={},lastP='';
+const PCOL=['#E8710A','#1E8E3E','#9334E6','#D93025','#1A73E8','#C5221F','#0B8A94','#B06000','#C2185B','#3949AB'];
+function pcolor(k){let h=7;for(const c of String(k))h=(h*31+c.charCodeAt(0))>>>0;return PCOL[h%PCOL.length]}
+function myPresence(){
+  let ev=null,cell=null;
+  if(draft&&canEdit()){if(draft.id)ev=draft.id;else cell=draft.month+':'+draft.lane+':'+draft.start}
+  else if(drag)ev=drag.id;else if(isEd()&&S.hover)cell=S.hover;
+  return{name:REC||S._acct||'',mode:lockMine()?'edit':'view',ev,cell};
+}
+// every few seconds: send what I'm doing, receive who else is here, the edit lock and the data version
+let lastPoll=0,polling=false;
+async function pollOnce(force){
+  if(!TOKEN||polling||!$('lock').hidden)return;
+  const now=Date.now(),gap=document.hidden?30e3:(myPresence().mode==='edit'?2500:4000);
+  if(!force&&now-lastPoll<gap)return;
+  polling=true;lastPoll=now;
+  try{
+    const r=await api('poll',{presence:myPresence()});ROOM=true;
+    const had=lockMine();S.lockDoc=r.lock;
+    if(had&&!lockMine()&&S.editing){S.editing=false;toast('สิทธิ์แก้ไขหมดอายุ ต้องกดโหมดแก้ไขใหม่',5000)}
+    PEERS=(r.peers||[]).map(p=>({peer:p.tab,by:null,isMe:p.tab===TAB,sameTab:p.tab===TAB,kind:'viewer',guest:false,presence:p.presence||{}}));
+    if(r.ver!==S.ver&&!Q.length&&!Qp&&!drag)await loadState();else render();
+  }catch(e){}finally{polling=false}
+}
+setInterval(()=>pollOnce(false),700);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollOnce(true)});
+function peerName(pr){const p=pr.presence||{};return p.name||(pr.by&&PROF[pr.by])||'ผู้ใช้'}
+async function resolveProfiles(){return;try{const ids=[...new Set(PEERS.map(p=>p.by).filter(x=>x&&!(x in PROF)))];if(ids.length&&S.user&&S.user.profiles){const ps=await S.user.profiles(ids.slice(0,64));ids.forEach(i=>{PROF[i]=(ps[i]&&ps[i].name)||''});renderPresence()}}catch(e){}}
+function renderPresence(){
+  const bar=$('people');if(!bar)return;
+  const list=PEERS.filter(p=>p.kind==='viewer');
+  if(!ROOM||!list.length){bar.hidden=true}else{
+    bar.hidden=false;
+    bar.innerHTML='<span>เปิดอยู่ '+list.length+' คน:</span>'+list.map(p=>{const c=pcolor(p.peer),pr=p.presence||{};const what=pr.ev&&S.events[pr.ev]?'กำลังแก้: '+evName(S.events[pr.ev]):'';return '<span class="pchip" title="'+esc(what)+'"><i style="background:'+c+'"></i>'+esc(peerName(p))+(p.sameTab?' (คุณ)':'')+(pr.mode==='edit'?' <b style="background:'+c+'">กำลังแก้ไข</b>':'')+'</span>'}).join('');
+  }
+  const sh=$('sheet');sh.querySelectorAll('.pov').forEach(x=>x.remove());if(!ROOM)return;
+  const o=sh.getBoundingClientRect();
+  list.forEach(p=>{if(p.sameTab)return;const pr=p.presence||{};let el=null;
+    if(pr.ev)el=sh.querySelector('.ev[data-id="'+CSS.escape(String(pr.ev))+'"]');
+    else if(pr.cell){const [k,l,d]=String(pr.cell).split(':');el=sh.querySelector('.cell[data-k="'+CSS.escape(k)+'"][data-l="'+(+l)+'"][data-d="'+(+d)+'"]')}
+    if(!el)return;const r=el.getBoundingClientRect(),c=pcolor(p.peer);
+    const v=document.createElement('div');v.className='pov';v.style.cssText='left:'+(r.left-o.left)+'px;top:'+(r.top-o.top)+'px;width:'+r.width+'px;height:'+r.height+'px;border-color:'+c;
+    const t=document.createElement('div');t.className='ptag';t.style.background=c;t.textContent=peerName(p)+(pr.mode==='edit'?'':' (ดู)');v.appendChild(t);sh.appendChild(v)});
+}
+window.addEventListener('resize',()=>renderPresence());
+$('sheet').addEventListener('pointerover',ev=>{const c=ev.target.closest&&ev.target.closest('.cell');const v=c?c.dataset.k+':'+c.dataset.l+':'+c.dataset.d:null;if(v!==S.hover)S.hover=v});
+$('sheet').addEventListener('pointerleave',()=>{S.hover=null});
+async function joinRoom(){pollOnce(true)}
+
+// ---------- recorder name + change log ----------
+// The typed name is shown to people using the page only; it never appears in PREVIEW, PDF or Excel.
+function setRec(v){REC=(v||'').trim().slice(0,60);try{localStorage.setItem('mp_name',REC)}catch(e){}const i=$('recName');if(i&&i.value!==REC)i.value=REC;$('whoWrap').classList.toggle('need',!REC)}
+function needName(then){
+  if(REC||!S.canWrite)return true;
+  // the recorder is always the user name from the sign-in screen
+  showLock(true);$('lockErr').textContent='กรุณาใส่ชื่อผู้ใช้งานอีกครั้ง';return false;
+}
+const FLABEL={text:'ชื่อภารกิจ',status:'สถานะ',type:'ประเภท',month:'เดือน',start:'วันเริ่ม',end:'วันสิ้นสุด',lane:'แถว',rows:'ความสูง',size:'ขนาดตัวอักษร',bold:'ตัวหนา',italic:'ตัวเอียง',underline:'ขีดเส้นใต้',color:'สีตัวหนังสือ',fill:'สีพื้น'};
+function fv(k,v){if(k==='status')return STATUS[v]||v;if(k==='type')return (TYPES[v]||{}).label||v;if(k==='lane')return v+1;if(k==='month'){const [y,m]=String(v).split('-').map(Number);return MABBR[m-1]+String(y+543).slice(-2)}if(k==='bold'||k==='italic')return v?'ใช่':'ไม่';if(k==='underline')return (ULS.find(u=>u[0]===(v||''))||['',v])[1];if(k==='color'||k==='fill')return v||'อัตโนมัติ';return String(v).replace(/\n/g,' ')}
+function diffText(a,b){const out=[];Object.keys(FLABEL).forEach(k=>{const x=a[k]==null?'':a[k],y=b[k]==null?'':b[k];if(k in b&&String(x)!==String(y))out.push(FLABEL[k]+': '+fv(k,x)+' → '+fv(k,y))});return out.join(' · ')}
+function evName(e){return String(e.text||'').replace(/\n/g,' ')+' ('+fv('month',e.month)+' '+e.start+(e.end!==e.start?'–'+e.end:'')+')'}
+function logEv(action,detail){if(!S.db||!S.canWrite)return;if(action!=='SAVE'){S.dirty=true;setTimeout(renderUndo,0)}w(()=>enqueue({c:'logs',op:'add',data:{at:Date.now(),action,detail:String(detail||'').slice(0,600)}}))}
+async function pruneLogs(){}
+let LG=null;
+async function openLogs(){LG={busy:true,list:[],q:''};drawLogs();try{const r=await api('listLogs',{limit:300});LG.list=r.list||[]}catch(e){LG.err='โหลดประวัติไม่สำเร็จ'}LG.busy=false;drawLogs()}
+function drawLogs(){
+  const m=$('modal2');if(!LG){m.innerHTML='';return}
+  const q=LG.q.trim().toLowerCase();const list=LG.list.filter(x=>!q||(x.by+' '+x.action+' '+x.detail).toLowerCase().includes(q));
+  let h='<div class="scrim" id="lgScrim"><div class="panel" role="dialog" aria-modal="true" aria-labelledby="lgT" style="width:min(560px,100%)"><h2 id="lgT">ประวัติการแก้ไข</h2><div class="hint">แสดง 300 รายการล่าสุด · ระบบเก็บไว้ 1 ปี · ส่วนนี้ไม่แสดงใน PREVIEW, PDF และ Excel</div>';
+  h+='<div class="f"><label for="lgQ">ค้นหา (ชื่อผู้บันทึก ภารกิจ หรือการกระทำ)</label><input id="lgQ" type="text" value="'+esc(LG.q)+'"></div><div class="logs">';
+  if(LG.busy)h+='<div class="hint" style="padding:10px 0">กำลังโหลด…</div>';else if(LG.err)h+='<div class="hint" style="padding:10px 0">'+LG.err+'</div>';else if(!list.length)h+='<div class="hint" style="padding:10px 0">ยังไม่มีรายการ</div>';
+  list.forEach(x=>{const d=new Date(x.at);const acc=LG.prof&&x.uid&&LG.prof[x.uid]&&LG.prof[x.uid].name;
+    h+='<div class="lg"><time>'+pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+String(d.getFullYear()+543).slice(-2)+' '+pad(d.getHours())+':'+pad(d.getMinutes())+'</time><div><span class="by">'+esc(x.by||'ไม่ระบุชื่อ')+'</span>'+(acc?' <span class="acc">('+esc(acc)+')</span>':'')+'</div><div class="act">'+esc(x.action)+'</div>'+(x.detail?'<div class="det">'+esc(x.detail)+'</div>':'')+'</div>'});
+  h+='</div><div class="acts"><span class="sp"></span><button id="lgClose">ปิด</button></div></div></div>';
+  m.innerHTML=h;
+  $('lgClose').onclick=()=>{LG=null;drawLogs()};$('lgScrim').onclick=e=>{if(e.target.id==='lgScrim'){LG=null;drawLogs()}};
+  $('lgQ').oninput=e=>{LG.q=e.target.value;const pos=e.target.selectionStart;drawLogs();const i=$('lgQ');i.focus();try{i.setSelectionRange(pos,pos)}catch(_){}};
+}
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&LG){LG=null;drawLogs()}});
+
+// ---------- lane ops ----------
+async function deleteLane(k,L){
+  const dels=[],ups=[];const gone=evsOf(k).filter(e=>e.lane===L&&(e.rows||1)===1).map(evName);logEv('ลบแถว',fv('month',k)+' แถวที่ '+(L+1)+(gone.length?' · ลบภารกิจ: '+gone.join(', '):''));
+  evsOf(k).forEach(e=>{const r=e.rows||1;
+    if(e.lane===L){ if(r>1)ups.push({id:e.id,data:{rows:r-1,ts:Date.now()}}); else dels.push(e.id);}
+    else if(e.lane<L&&e.lane+r>L)ups.push({id:e.id,data:{rows:r-1,ts:Date.now()}});
+    else if(e.lane>L)ups.push({id:e.id,data:{lane:e.lane-1,ts:Date.now()}});
+  });
+  const n=Math.max(1,lanesOf(k)-1);
+  await Promise.all(dels.map(delEvent));
+  await patchMany(ups);await setLanes(k,n);
+}
+async function insertLane(k,L){ // new empty lane below L
+  logEv('แทรกแถว',fv('month',k)+' ใต้แถวที่ '+(L+1));
+  const ups=evsOf(k).filter(e=>e.lane>L).map(e=>({id:e.id,data:{lane:e.lane+1}}));
+  const n=lanesOf(k)+1;await setLanes(k,n);await patchMany(ups);
+}
+async function compact(k){
+  logEv('ลบแถวว่าง',fv('month',k));
+  const n=lanesOf(k),used=new Array(n).fill(false);
+  evsOf(k).forEach(e=>{for(let i=0;i<(e.rows||1);i++)used[e.lane+i]=true});
+  const map=[];let c=0;for(let i=0;i<n;i++){map[i]=c;if(used[i])c++}
+  const ups=evsOf(k).filter(e=>map[e.lane]!==e.lane).map(e=>({id:e.id,data:{lane:map[e.lane]}}));
+  await patchMany(ups);await setLanes(k,Math.max(1,c));
+}
+
+// ---------- render ----------
+function render(){
+  const ms=windowMonths(),t=today();
+  const a=ms[0],b=ms[2];
+  $('rangeLbl').textContent=MONTHS[a.m-1]+' '+(a.y+543)+' – '+MONTHS[b.m-1]+' '+(b.y+543);
+  $('editBtn').hidden=!S.canWrite;$('addBtn').hidden=!S.canWrite;
+  {const busy=!!lockOther();['editBtn','addBtn','saveBtn'].forEach(id=>{$(id).disabled=busy});if(busy&&S.editing)S.editing=false}
+  renderLockBar();
+  $('editBtn').classList.toggle('on',S.editing&&S.canWrite);
+  $('editBtn').textContent=S.editing&&S.canWrite?'เสร็จสิ้นการแก้ไข':'โหมดแก้ไข';
+  $('hint').textContent=!S.loaded?'':!S.db?'กำลังโหลด…':!S.canWrite?'ดูได้อย่างเดียว':S.editing?'แตะช่องว่างเพื่อเพิ่มภารกิจ · ลากแถบเพื่อย้ายวัน/แถว · ลากขีดสีน้ำเงินที่ขอบซ้าย/ขวาเพื่อเปลี่ยนวัน ขอบบน/ล่างเพื่อเปลี่ยนความสูง · ปุ่ม − / + ด้านซ้ายใช้ลบหรือแทรกแถว · แตะตัวเลขวันที่เพื่อตั้ง/ยกเลิกวันหยุด':'แตะภารกิจเพื่อแก้ไขสถานะ สี หรือรายละเอียด';
+  renderUndo();if(lockOther())$('undoBtn').disabled=true;$('saveBtn').hidden=!S.canWrite;$('snapBtn').hidden=!S.canWrite;$('whoWrap').hidden=!S.canWrite;$('logBtn').hidden=!S.db;
+  if($('recName').value!==REC&&document.activeElement!==$('recName'))$('recName').value=REC;$('whoWrap').classList.toggle('need',!REC);
+  const sheet=$('sheet');sheet.classList.toggle('editing',isEd());
+  if(!S.loaded){return}
+  if(!S.db){sheet.innerHTML='<div class="empty">กำลังโหลดแผน…</div>';return}
+  sheet.innerHTML=sheetHTML();fitLabels(sheet);renderPresence();
+}
+function isEd(){return S.editing&&canEdit()&&!S._exp}
+function headInfo(){
+  const st=S.settings||{},t=today();
+  const fy=(t.m>=10?t.y+1:t.y)+543; // fiscal year starts in October
+  let maxTs=0;Object.values(S.events).forEach(e=>{if(e.ts>maxTs)maxTs=e.ts});
+  let up=st.updated?new Date(st.updated+'T00:00:00'):null;if(maxTs&&(!up||maxTs>up.getTime()))up=new Date(maxTs);
+  const upStr=up?pad(up.getDate())+'_'+pad(up.getMonth()+1)+'_'+String(up.getFullYear()+543).slice(-2):'';
+  const unit=st.unit||'แผนภารกิจ';
+  return{unit,fy,upStr,rest:' ปีงบประมาณ '+String(fy).slice(-2)+(upStr?' (Update '+upStr+')':''),sub:'Master Plan '+(fy-543),notes:st.notes||[]};
+}
+function sheetHTML(){
+  const ms=windowMonths(),t=today(),H=headInfo(),ed=isEd();
+  let h='<div class="title">';
+  h+=(ed?'<input id="unitIn" type="text" value="'+esc(H.unit)+'" aria-label="ชื่อหน่วย">':esc(H.unit));
+  h+=esc(H.rest)+'<span class="sub">'+esc(H.sub)+'</span></div>';
+  ms.forEach(M=>{h+=monthHTML(M,t)});
+  h+='<div class="legend"><b>หมายเหตุ</b>'+LEGEND.map(k=>'<span class="sw"><i style="background:'+TYPES[k].fill+'"></i>'+TYPES[k].label+'</span>').join('')+'</div>';
+  h+='<div class="notes">';
+  if(ed){H.notes.forEach((n,i)=>{h+='<div class="nl"><input type="text" id="nlab'+i+'" data-nlab="'+i+'" value="'+esc(n.label||'')+'" placeholder="หัวข้อ" aria-label="หัวข้อหมายเหตุ" style="'+noteCSS(noteFmt(n,'l'))+'"><button data-nfmt="'+i+'" data-part="l" title="รูปแบบของหัวข้อ">Aa</button><input type="text" id="note'+i+'" data-note="'+i+'" value="'+esc(n.text)+'" title="ใส่ **ข้อความ** เพื่อทำตัวหนาเฉพาะคำ" aria-label="ข้อความหมายเหตุ" style="'+noteCSS(noteFmt(n,'t'))+'"><button data-nfmt="'+i+'" data-part="t" title="รูปแบบของข้อความ">Aa</button><button data-ndel="'+i+'">ลบ</button></div>'});h+='<div class="nadd"><button data-nadd="1">+ เพิ่มบรรทัดหมายเหตุ</button> <span style="font-family:var(--f-ui);font-size:12px;color:#666">ปุ่ม Aa หลังหัวข้อและหลังข้อความ ตั้งรูปแบบแยกกันได้ (ขนาด สี ตัวหนา ตัวเอียง ขีดเส้นใต้ สีพื้น) · ใส่ **ข้อความ** เพื่อทำตัวหนาเฉพาะคำ</span></div>'}
+  else H.notes.forEach(n=>{if(!n.text&&!n.label)return;h+='<div class="nlab" style="'+noteCSS(noteFmt(n,'l'))+'">'+esc(n.label||'')+'</div><div class="ntxt" style="'+noteCSS(noteFmt(n,'t'))+'">'+richHTML(n.text||'')+'</div>'});
+  h+='</div>';
+  return h;
+}
+// shrink month names until they fit their column
+function fitLabels(root){
+  root.querySelectorAll('.mlabel').forEach(l=>{
+    const max=l.clientWidth-6;let px=parseFloat(getComputedStyle(l).fontSize),guard=0;
+    l.style.fontSize='';px=parseFloat(getComputedStyle(l).fontSize);
+    while(guard++<30&&[...l.querySelectorAll('span')].some(sp=>sp.scrollWidth>max)){px-=1;l.style.fontSize=px+'px'}
+  });
+  // mission text that is wider than its cells shrinks (down to 65%) instead of being cut off
+  root.querySelectorAll('.ev').forEach(e=>{
+    e.style.fontSize='';const base=parseFloat(getComputedStyle(e).fontSize);let px=base,guard=0;
+    while(guard++<20&&e.scrollWidth>e.clientWidth+1&&px>base*0.65){px-=0.5;e.style.fontSize=px+'px'}
+  });
+}
+// weekends + extra holidays (settings.holidays, ISO dates) get a light grey background in empty cells
+// underline styles offered the same way as Excel's Format Cells > Font > Underline
+const ULS=[['','ไม่มี'],['single','เส้นเดียว'],['double','เส้นคู่'],['singleAccounting','เส้นเดียว (บัญชี)'],['doubleAccounting','เส้นคู่ (บัญชี)']];
+function ulCSS(u){if(!u)return '';return 'text-decoration-line:underline;text-decoration-style:'+(/double/.test(u)?'double':'solid')+';text-underline-offset:'+(/Accounting/.test(u)?'0.2em':'0.06em')+';text-decoration-thickness:'+(/Accounting/.test(u)?'1.5px':'1px')+';'}
+function fmtCSS(o){return (o.italic?'font-style:italic;':'')+ulCSS(o.underline)}
+// **bold** markup inside note text
+function noteFmt(n,part){const base={size:n.size||12,color:n.color||'',bg:n.bg||'',bold:!!n.bold,italic:!!n.italic,underline:n.underline||''};return Object.assign(base,n[part==='l'?'lf':'tf']||{})}
+function noteCSS(n){return 'color:'+(n.color||'#000000')+';'+(n.bg?'background:'+n.bg+';':'')+'font-size:calc('+(n.size||12)+'pt*var(--fs)*1.333);'+(n.bold?'font-weight:700;':'')+fmtCSS(n)}
+function richRuns(t){return String(t).split(/\*\*(.+?)\*\*/).map((x,i)=>({t:x,b:i%2===1})).filter(r=>r.t)}
+function richHTML(t){return richRuns(t).map(r=>r.b?'<b>'+esc(r.t)+'</b>':esc(r.t)).join('')}
+function isWeekend(M,d){const g=new Date(M.y,M.m-1,d).getDay();return g===0||g===6}
+function isHol(M,d){const hs=(S.settings&&S.settings.holidays)||[];return hs.indexOf(M.y+'-'+pad(M.m)+'-'+pad(d))>=0}
+function isOff(M,d){return isWeekend(M,d)||isHol(M,d)}
+function monthHTML(M,t){
+  const k=M.key,n=lanesOf(k),ed=isEd();
+  const occ=Array.from({length:n},()=>new Array(32).fill(false));
+  const evs=evsOf(k).sort((a,b)=>a.lane-b.lane||a.start-b.start);
+  evs.forEach(e=>{for(let r=e.lane;r<e.lane+(e.rows||1)&&r<n;r++)for(let d=e.start;d<=Math.min(e.end,31);d++)occ[r][d]=true});
+  let h='<div class="month" data-month="'+k+'">';
+  h+='<div class="mlabel" style="grid-column:1;grid-row:1">เดือน</div><div class="gut" style="grid-column:2;grid-row:1"></div>';
+  for(let d=1;d<=31;d++){const isT=(M.y===t.y&&M.m===t.m&&d===t.d),v=d>M.days,hol=!v&&isHol(M,d);h+='<div class="dh'+(d===31?' lc':'')+(isT?' today':'')+(v?' void':'')+(hol?' hol':'')+'" data-hk="'+k+'" data-hd="'+d+'" title="'+(v?'':hol?'วันหยุดเพิ่มเติม':isWeekend(M,d)?'เสาร์-อาทิตย์':'')+'" style="grid-column:'+(2+d)+';grid-row:1'+(v?';background:var(--void);color:#000':'')+'">'+thd(d)+'</div>'}
+  h+='<div class="mlabel lr" style="grid-column:1;grid-row:2/span '+n+'"><span>'+MONTHS[M.m-1]+'</span><span>'+thd(String(M.y+543).slice(-2))+'</span>'+(ed?'<button data-compact="'+k+'" style="font-family:var(--f-ui);font-size:11px;padding:2px 6px;margin-top:6px;font-weight:400" title="ลบแถวที่ไม่มีภารกิจทั้งหมดในเดือนนี้">ลบแถวว่าง</button>':'')+'</div>';
+  for(let L=0;L<n;L++){
+    const armed=S.armed===k+':'+L;
+    h+='<div class="gut'+(L===n-1?' lr':'')+'" style="grid-column:2;grid-row:'+(L+2)+'">'+(ed?'<button class="del'+(armed?' arm':'')+'" data-dl="'+k+':'+L+'" title="'+(armed?'แตะอีกครั้งเพื่อยืนยันลบแถว':'ลบแถวนี้')+'" aria-label="ลบแถว">'+(armed?'ลบ?':'−')+'</button><button data-il="'+k+':'+L+'" title="แทรกแถวว่างด้านล่าง" aria-label="แทรกแถว">+</button>':'')+'</div>';
+    for(let d=1;d<=31;d++){h+='<div class="cell'+(d===31?' lc':'')+(L===n-1?' lr':'')+(d>M.days?' void':(isOff(M,d)?' off':''))+(occ[L][d]?'':' free')+'" data-k="'+k+'" data-l="'+L+'" data-d="'+d+'" style="grid-column:'+(2+d)+';grid-row:'+(L+2)+'"></div>'}
+  }
+  evs.forEach(e=>{
+    const s=Math.max(1,e.start),en=Math.min(Math.max(e.end,s),31),r=Math.min(e.rows||1,n-e.lane);
+    h+='<div class="ev'+(en===31?' lc':'')+(e.lane+Math.max(1,r)>=n?' lr':'')+'" data-id="'+esc(e.id)+'" title="'+esc(label(e))+'" style="grid-column:'+(2+s)+'/span '+(en-s+1)+';grid-row:'+(e.lane+2)+'/span '+Math.max(1,r)+';background:'+fillColor(e)+';color:'+textColor(e)+';--evfs:'+fsz(e)+';font-weight:'+(e.bold||e.status==='cancelled'?700:400)+';'+fmtCSS(e)+'">'+esc(label(e))+'<span class="rz l" data-rz="l" title="ลากเพื่อเปลี่ยนวันเริ่ม"></span><span class="rz r" data-rz="r" title="ลากเพื่อเปลี่ยนวันสิ้นสุด"></span><span class="rz t" data-rz="t" title="ลากขึ้น/ลงเพื่อเปลี่ยนแถวบน"></span><span class="rz b" data-rz="b" title="ลากขึ้น/ลงเพื่อเปลี่ยนความสูง (จำนวนแถว)"></span></div>';
+  });
+  // past-day overlay
+  let pastTo=0;
+  if(M.y<t.y||(M.y===t.y&&M.m<t.m))pastTo=M.days;else if(M.y===t.y&&M.m===t.m)pastTo=t.d-1;
+  if(pastTo>0)h+='<div class="past" style="grid-column:3/span '+pastTo+';grid-row:2/span '+n+'"></div>';
+  h+='</div>';return h;
+}
+
+// ---------- editor ----------
+let draft=null;
+function openEditor(e,isNew){
+  if(S.canWrite&&!REC){needName(()=>openEditor(e,isNew));return}
+  if(S.canWrite&&!lockMine()&&!e._ro){getLock().then(ok=>{if(!ok&&isNew){lockBusyToast();return}if(!ok)lockBusyToast();openEditor(Object.assign({},e,{_ro:!ok}),isNew)});return}
+  draft=Object.assign({text:'',type:'domestic',status:'normal',size:12,bold:false,italic:false,underline:'',color:'',fill:'',rows:1},e);
+  delete draft._ro;draft._new=!!isNew;draft._confirmDel=false;drawEditor();
+}
+function drawEditor(){
+  const m=$('modal');if(!draft){m.innerHTML='';maybeRelease();return}
+  const d=draft,ro=!canEdit();
+  const [y,mo]=d.month.split('-').map(Number),days=new Date(y,mo,0).getDate();
+  const ms=windowMonths();if(!ms.find(x=>x.key===d.month))ms.push({key:d.month,y,m:mo});
+  let h='<div class="scrim" id="scrim"><div class="panel" role="dialog" aria-modal="true" aria-labelledby="edT">';
+  h+='<h2 id="edT">'+(d._new?'เพิ่มภารกิจ':ro?'รายละเอียดภารกิจ':'แก้ไขภารกิจ')+'</h2>';
+  h+='<div class="preview"><div id="pv"></div></div>';
+  if(!d._new&&d.ts)h+='<div class="lastby">แก้ไขล่าสุด'+(d.by?' โดย '+esc(d.by):'')+' · '+(()=>{const x=new Date(d.ts);return pad(x.getDate())+'/'+pad(x.getMonth()+1)+'/'+String(x.getFullYear()+543).slice(-2)+' '+pad(x.getHours())+':'+pad(x.getMinutes())+' น.'})()+'</div>';
+  h+='<div class="f"><label for="eText">ชื่อภารกิจ (Enter = ขึ้นบรรทัดใหม่)</label><textarea id="eText" '+(ro?'readonly':'')+'>'+esc(d.text)+'</textarea></div>';
+  h+='<div class="f"><span class="lb">สถานะ</span><div class="seg" id="eStatus">'+Object.keys(STATUS).map(s=>'<button data-st="'+s+'" class="'+(d.status===s?'on':'')+'" '+(ro?'disabled':'')+'>'+STATUS[s]+'</button>').join('')+'</div></div>';
+  h+='<div class="f"><label for="eType">ประเภท</label><select id="eType" '+(ro?'disabled':'')+'>'+Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(d.type===k?' selected':'')+'>'+TYPES[k].label+'</option>').join('')+'</select></div>';
+  h+='<div class="row2"><div class="f"><label for="eMonth">เดือน</label><select id="eMonth" '+(ro?'disabled':'')+'>'+ms.map(x=>'<option value="'+x.key+'"'+(x.key===d.month?' selected':'')+'>'+MONTHS[x.m-1]+' '+(x.y+543)+'</option>').join('')+'</select></div>';
+  h+='<div class="f"><label for="eLane">แถวที่</label><input id="eLane" type="number" min="1" max="60" value="'+(d.lane+1)+'" '+(ro?'readonly':'')+'></div></div>';
+  h+='<div class="row2"><div class="f"><label for="eStart">วันเริ่ม</label><input id="eStart" type="number" min="1" max="'+days+'" value="'+d.start+'" '+(ro?'readonly':'')+'></div><div class="f"><label for="eEnd">วันสิ้นสุด</label><input id="eEnd" type="number" min="1" max="'+days+'" value="'+d.end+'" '+(ro?'readonly':'')+'></div></div>';
+  h+='<div class="row2"><div class="f"><label for="eRows">ความสูง (จำนวนแถว)</label><input id="eRows" type="number" min="1" max="10" value="'+(d.rows||1)+'" '+(ro?'readonly':'')+'></div><div class="f"><label for="eSize">ขนาดตัวอักษร (pt)</label><input id="eSize" type="number" min="8" max="28" step="1" value="'+(d.size||12)+'" '+(ro?'readonly':'')+'></div></div>';
+  h+='<div class="f"><span class="lb">รูปแบบตัวอักษร</span><div class="seg"><button id="eBold" class="'+(d.bold?'on':'')+'" '+(ro?'disabled':'')+' aria-pressed="'+!!d.bold+'"><b>B</b> ตัวหนา</button><button id="eItal" class="'+(d.italic?'on':'')+'" '+(ro?'disabled':'')+' aria-pressed="'+!!d.italic+'"><i>I</i> ตัวเอียง</button></div></div>';
+  h+='<div class="f"><label for="eUl">ขีดเส้นใต้</label><select id="eUl" '+(ro?'disabled':'')+'>'+ULS.map(u=>'<option value="'+u[0]+'"'+((d.underline||'')===u[0]?' selected':'')+'>'+u[1]+'</option>').join('')+'</select></div>';
+  h+='<div class="f"><span class="lb">สีตัวหนังสือ'+(d.status==='cancelled'?' (สถานะยกเลิกจะแสดงเป็นสีแดง)':'')+'</span><div class="chips" id="eColor"><button class="chip auto'+(d.color?'':' sel')+'" data-c="" '+(ro?'disabled':'')+'>อัตโนมัติ</button>'+TEXT_SW.map(c=>'<button class="chip'+(d.color.toUpperCase()===c?' sel':'')+'" data-c="'+c+'" style="background:'+c+'" aria-label="สี '+c+'" '+(ro?'disabled':'')+'></button>').join('')+'<input type="color" id="eColorC" value="'+(d.color||'#000000')+'" aria-label="เลือกสีเอง" '+(ro?'disabled':'')+'></div></div>';
+  h+='<div class="f"><span class="lb">สีพื้น</span><div class="chips" id="eFill"><button class="chip auto'+(d.fill?'':' sel')+'" data-f="" '+(ro?'disabled':'')+'>ตามประเภท</button>'+FILL_SW.map(c=>'<button class="chip'+(d.fill.toUpperCase()===c?' sel':'')+'" data-f="'+c+'" style="background:'+c+'" aria-label="สีพื้น '+c+'" '+(ro?'disabled':'')+'></button>').join('')+'<input type="color" id="eFillC" value="'+(d.fill||'#ffffff')+'" aria-label="เลือกสีพื้นเอง" '+(ro?'disabled':'')+'></div></div>';
+  h+='<div class="acts">';
+  if(ro)h+='<span class="ro">คุณมีสิทธิ์ดูอย่างเดียว</span><span class="sp"></span><button id="eClose">ปิด</button>';
+  else{if(!d._new)h+='<button class="danger" id="eDel">'+(d._confirmDel?'ยืนยันลบภารกิจ':'ลบ')+'</button>';h+='<span class="sp"></span><button id="eClose">ยกเลิก</button><button class="primary" id="eSave">บันทึก</button>'}
+  h+='</div></div></div>';
+  m.innerHTML=h;updPreview();
+  const ta=$('eText');if(d._new&&ta)ta.focus();
+}
+function readForm(){
+  const d=draft;if(!$('eText'))return;
+  d.text=$('eText').value;d.type=$('eType').value;d.month=$('eMonth').value;
+  const [y,mo]=d.month.split('-').map(Number),days=new Date(y,mo,0).getDate();
+  d.lane=Math.max(0,(parseInt($('eLane').value)||1)-1);
+  d.start=Math.min(days,Math.max(1,parseInt($('eStart').value)||1));
+  d.end=Math.min(days,Math.max(d.start,parseInt($('eEnd').value)||d.start));
+  d.rows=Math.max(1,Math.min(10,parseInt($('eRows').value)||1));
+  d.size=Math.max(8,Math.min(28,parseFloat($('eSize').value)||12));
+}
+function updPreview(){const p=$('pv');if(!p)return;const d=draft;p.textContent=label(Object.assign({},d,{text:$('eText')?$('eText').value:d.text}))||'—';p.style.background=fillColor(d);p.style.color=textColor(d);p.style.fontSize=fsz(d);p.style.fontWeight=(d.bold||d.status==='cancelled')?700:400;p.style.fontStyle=d.italic?'italic':'normal';p.style.textDecoration='none';p.style.cssText+=';'+ulCSS(d.underline)}
+async function saveDraft(){
+  readForm();const d=draft;if(!d.text.trim()){$('eText').focus();return}
+  const id=d.id||('e'+Date.now().toString(36)+Math.random().toString(36).slice(2,6));
+  const data={month:d.month,start:d.start,end:d.end,lane:d.lane,rows:d.rows,text:d.text.trim(),type:d.type,status:d.status,size:d.size,bold:!!d.bold,italic:!!d.italic,underline:d.underline||'',color:d.color||'',fill:d.fill||'',ts:Date.now()};
+  const old=S.events[id];data.by=REC;
+  if(old){const df=diffText(old,data);if(df)logEv('แก้ไขภารกิจ',evName(old)+' · '+df)}else logEv('เพิ่มภารกิจ',evName(data));
+  draft=null;drawEditor();
+  if(data.lane+data.rows>lanesOf(data.month))await setLanes(data.month,data.lane+data.rows);
+  await putEvent(id,data);
+}
+$('modal').addEventListener('click',async ev=>{
+  const t=ev.target;if(!draft)return;
+  if(t.id==='scrim'||t.id==='eClose'){draft=null;drawEditor();return}
+  if(t.id==='eSave'){saveDraft();return}
+  if(t.id==='eDel'){if(!draft._confirmDel){readForm();draft._confirmDel=true;drawEditor();return}const id=draft.id;draft=null;drawEditor();if(S.events[id])logEv('ลบภารกิจ',evName(S.events[id]));await delEvent(id);return}
+  const st=t.closest('[data-st]');if(st){readForm();draft.status=st.dataset.st;drawEditor();return}
+  if(t.closest('#eBold')){readForm();draft.bold=!draft.bold;drawEditor();return}
+  if(t.closest('#eItal')){readForm();draft.italic=!draft.italic;drawEditor();return}
+  const c=t.closest('[data-c]');if(c){readForm();draft.color=c.dataset.c;drawEditor();return}
+  const f=t.closest('[data-f]');if(f){readForm();draft.fill=f.dataset.f;drawEditor();return}
+});
+$('modal').addEventListener('input',ev=>{
+  if(!draft)return;const t=ev.target;
+  if(t.id==='eColorC'){draft.color=t.value.toUpperCase();document.querySelectorAll('#eColor .chip').forEach(x=>x.classList.remove('sel'))}
+  if(t.id==='eFillC'){draft.fill=t.value.toUpperCase();document.querySelectorAll('#eFill .chip').forEach(x=>x.classList.remove('sel'))}
+  if(t.id==='eType'){draft.type=t.value}
+  if(t.id==='eUl'){draft.underline=t.value}
+  if(t.id==='eSize'){draft.size=parseFloat(t.value)||12}
+  updPreview();
+});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&draft){draft=null;drawEditor()}});
+
+// ---------- note line format panel ----------
+let NF=null;
+const FMT0={size:12,color:'',bg:'',bold:false,italic:false,underline:''};
+function openNoteFmt(i,part){const n=(S.settings.notes||[])[i];if(!n)return;NF={i,part:part||'t',label:n.label||'',text:n.text||'',l:noteFmt(n,'l'),t:noteFmt(n,'t')};drawNoteFmt()}
+function drawNoteFmt(){
+  const m=$('modal');if(!NF){m.innerHTML='';maybeRelease();return}const d=NF[NF.part],other=NF.part==='l'?'ข้อความ':'หัวข้อ';
+  let h='<div class="scrim" id="nfScrim"><div class="panel" role="dialog" aria-modal="true" aria-labelledby="nfT"><h2 id="nfT">รูปแบบหมายเหตุ บรรทัดที่ '+(NF.i+1)+'</h2>';
+  h+='<div class="preview" style="justify-content:flex-start;gap:14px;align-items:center"><div id="nfPvL" style="text-align:left;min-width:0;padding:3px 4px;'+noteCSS(NF.l)+'">'+(esc(NF.label)||'<span style="opacity:.4">หัวข้อ</span>')+'</div><div id="nfPvT" style="text-align:left;min-width:0;padding:3px 4px;'+noteCSS(NF.t)+'">'+(richHTML(NF.text)||'—')+'</div></div>';
+  h+='<div class="f"><span class="lb">แก้รูปแบบของ</span><div class="seg"><button data-nfp="l" class="'+(NF.part==='l'?'on':'')+'" aria-pressed="'+(NF.part==='l')+'">หัวข้อ</button><button data-nfp="t" class="'+(NF.part==='t'?'on':'')+'" aria-pressed="'+(NF.part==='t')+'">ข้อความ</button></div></div>';
+  h+='<div class="row2"><div class="f"><label for="nfSize">ขนาดตัวอักษร (pt)</label><input id="nfSize" type="number" min="8" max="28" step="1" value="'+(d.size||12)+'"></div>';
+  h+='<div class="f"><label for="nfUl">ขีดเส้นใต้</label><select id="nfUl">'+ULS.map(u=>'<option value="'+u[0]+'"'+((d.underline||'')===u[0]?' selected':'')+'>'+u[1]+'</option>').join('')+'</select></div></div>';
+  h+='<div class="f"><span class="lb">รูปแบบตัวอักษร</span><div class="seg"><button id="nfBold" class="'+(d.bold?'on':'')+'" aria-pressed="'+!!d.bold+'"><b>B</b> ตัวหนา</button><button id="nfItal" class="'+(d.italic?'on':'')+'" aria-pressed="'+!!d.italic+'"><i>I</i> ตัวเอียง</button></div></div>';
+  h+='<div class="f"><span class="lb">สีตัวหนังสือ</span><div class="chips">'+['#000000','#FF0000','#0070C0','#00B050','#7030A0','#C65911','#FFFFFF'].map(c=>'<button class="chip'+((d.color||'#000000').toUpperCase()===c?' sel':'')+'" data-nfc="'+c+'" style="background:'+c+'" aria-label="สี '+c+'"></button>').join('')+'<input type="color" id="nfColorC" value="'+(d.color||'#000000')+'" aria-label="เลือกสีตัวหนังสือเอง"></div></div>';
+  h+='<div class="f"><span class="lb">สีพื้นหลัง</span><div class="chips"><button class="chip auto'+(d.bg?'':' sel')+'" data-nfb="">ไม่มี</button>'+['#FFFF00','#FFC000','#E2F0DB','#B4C6E7','#F5B084','#FBE5D6','#DBDBDB','#FF0000'].map(c=>'<button class="chip'+((d.bg||'').toUpperCase()===c?' sel':'')+'" data-nfb="'+c+'" style="background:'+c+'" aria-label="สีพื้น '+c+'"></button>').join('')+'<input type="color" id="nfBgC" value="'+(d.bg||'#ffffff')+'" aria-label="เลือกสีพื้นเอง"></div></div>';
+  h+='<div><button id="nfCopy">ใช้รูปแบบนี้กับ'+other+'ด้วย</button></div>';
+  h+='<div class="hint">ถ้าต้องการตัวหนาเฉพาะบางคำในข้อความ ให้ครอบคำนั้นด้วย **</div>';
+  h+='<div class="acts"><span class="sp"></span><button id="nfClose">ยกเลิก</button><button class="primary" id="nfSave">บันทึก</button></div></div></div>';
+  m.innerHTML=h;
+}
+function nfRead(){const d=NF[NF.part];if($('nfSize'))d.size=Math.max(8,Math.min(28,parseFloat($('nfSize').value)||12));if($('nfUl'))d.underline=$('nfUl').value}
+function nfPv(){const a=$('nfPvL'),b=$('nfPvT');if(a)a.setAttribute('style','text-align:left;min-width:0;padding:3px 4px;'+noteCSS(NF.l));if(b)b.setAttribute('style','text-align:left;min-width:0;padding:3px 4px;'+noteCSS(NF.t))}
+$('modal').addEventListener('click',ev=>{
+  if(!NF)return;const t=ev.target;
+  if(t.id==='nfScrim'||t.id==='nfClose'){NF=null;drawNoteFmt();return}
+  if(t.id==='nfSave'){nfRead();const notes=(S.settings.notes||[]).slice(),i=NF.i;logEv('แก้รูปแบบหมายเหตุ','บรรทัดที่ '+(i+1));const clean=f=>({size:f.size||12,color:f.color||'',bg:f.bg||'',bold:!!f.bold,italic:!!f.italic,underline:f.underline||''});
+    const o=Object.assign({},notes[i],{lf:clean(NF.l),tf:clean(NF.t)});['size','color','bg','bold','italic','underline'].forEach(k=>delete o[k]);notes[i]=o;NF=null;drawNoteFmt();saveSettings({notes});return}
+  const p=t.closest('[data-nfp]');if(p){nfRead();NF.part=p.dataset.nfp;drawNoteFmt();return}
+  if(t.id==='nfCopy'){nfRead();const o=NF.part==='l'?'t':'l';NF[o]=Object.assign({},NF[NF.part]);drawNoteFmt();toast('คัดลอกรูปแบบแล้ว');return}
+  const d=NF[NF.part];
+  if(t.closest('#nfBold')){nfRead();d.bold=!d.bold;drawNoteFmt();return}
+  if(t.closest('#nfItal')){nfRead();d.italic=!d.italic;drawNoteFmt();return}
+  const c=t.closest('[data-nfc]');if(c){nfRead();d.color=c.dataset.nfc;drawNoteFmt();return}
+  const b=t.closest('[data-nfb]');if(b){nfRead();d.bg=b.dataset.nfb;drawNoteFmt();return}
+});
+$('modal').addEventListener('input',ev=>{
+  if(!NF)return;const t=ev.target,d=NF[NF.part];
+  if(t.id==='nfColorC')d.color=t.value.toUpperCase();
+  if(t.id==='nfBgC')d.bg=t.value.toUpperCase();
+  nfRead();nfPv();
+});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&NF){NF=null;drawNoteFmt()}});
+
+// ---------- sheet interactions ----------
+const sheet=$('sheet');let drag=null;
+function cellAt(x,y,k){const els=document.elementsFromPoint(x,y);for(const el of els){if(el.classList&&el.classList.contains('cell')&&el.dataset.k===k)return el}return null}
+sheet.addEventListener('pointerdown',ev=>{
+  const evEl=ev.target.closest('.ev');if(!evEl||!S.canWrite||!S.editing||ev.button!==0)return;
+  const e=S.events[evEl.dataset.id];if(!e)return;
+  const c0=cellAt(ev.clientX,ev.clientY,e.month);
+  drag={id:e.id,el:evEl,x:ev.clientX,y:ev.clientY,moved:false,resize:ev.target.dataset.rz||'',d0:c0?+c0.dataset.d:e.start,l0:c0?+c0.dataset.l:e.lane,next:null};
+  evEl.setPointerCapture(ev.pointerId);
+});
+sheet.addEventListener('pointermove',ev=>{
+  if(!drag)return;
+  if(!drag.moved&&Math.hypot(ev.clientX-drag.x,ev.clientY-drag.y)<5)return;
+  drag.moved=true;drag.el.classList.add('dragging');
+  const e=S.events[drag.id];const c=cellAt(ev.clientX,ev.clientY,e.month);if(!c)return;
+  const [y,mo]=e.month.split('-').map(Number),days=new Date(y,mo,0).getDate();
+  const cd=+c.dataset.d,cl=+c.dataset.l,n=lanesOf(e.month);
+  let s=e.start,en=e.end,l=e.lane,rw=e.rows||1;
+  if(drag.resize==='b'){rw=Math.max(1,Math.min(n-l,cl-l+1))}
+  else if(drag.resize==='t'){const bot=e.lane+rw-1;l=Math.max(0,Math.min(bot,cl));rw=bot-l+1}
+  else if(drag.resize==='r'){en=Math.min(days,Math.max(s,cd))}else if(drag.resize==='l'){s=Math.max(1,Math.min(en,cd))}
+  else{const len=e.end-e.start;s=Math.max(1,Math.min(days-len,e.start+cd-drag.d0));en=s+len;l=Math.max(0,Math.min(n-(e.rows||1),e.lane+cl-drag.l0))}
+  drag.next={start:s,end:en,lane:l,rows:rw};
+  drag.el.style.gridColumn=(2+s)+'/span '+(en-s+1);drag.el.style.gridRow=(l+2)+'/span '+rw;
+});
+function endDrag(ev){
+  if(!drag)return;const dr=drag;drag=null;dr.el.classList.remove('dragging');
+  const e=S.events[dr.id];
+  if(!dr.moved){openEditor(e,false);return}
+  if(dr.next&&(dr.next.start!==e.start||dr.next.end!==e.end||dr.next.lane!==e.lane||dr.next.rows!==(e.rows||1))){logEv('ย้าย/ปรับขนาดภารกิจ',evName(e)+' · '+diffText(e,dr.next));patchMany([{id:e.id,data:Object.assign({ts:Date.now(),by:REC},dr.next)}])}else render();
+}
+sheet.addEventListener('pointerup',endDrag);sheet.addEventListener('pointercancel',()=>{if(drag){drag.el.classList.remove('dragging');drag=null;render()}});
+sheet.addEventListener('click',async ev=>{
+  const t=ev.target;
+  const evEl=t.closest('.ev');
+  if(evEl){if(!(S.canWrite&&S.editing))openEditor(S.events[evEl.dataset.id],false);return}
+  const dl=t.closest('[data-dl]');if(dl){const v=dl.dataset.dl;if(S.armed!==v){S.armed=v;render();clearTimeout(S._at);S._at=setTimeout(()=>{S.armed=null;render()},3500);return}S.armed=null;const [k,L]=v.split(':');await deleteLane(k,+L);return}
+  const il=t.closest('[data-il]');if(il){const [k,L]=il.dataset.il.split(':');await insertLane(k,+L);return}
+  const hd=t.closest('.dh[data-hd]');
+  if(hd&&S.canWrite&&S.editing&&!hd.classList.contains('void')){const iso=hd.dataset.hk+'-'+pad(+hd.dataset.hd);const hs=((S.settings&&S.settings.holidays)||[]).slice();const i=hs.indexOf(iso);if(i>=0)hs.splice(i,1);else hs.push(iso);hs.sort();logEv(i>=0?'ยกเลิกวันหยุด':'เพิ่มวันหยุด',iso);saveSettings({holidays:hs});toast(i>=0?'ยกเลิกวันหยุด '+iso:'เพิ่มวันหยุด '+iso);return}
+  const cp=t.closest('[data-compact]');if(cp){await compact(cp.dataset.compact);return}
+  const cell=t.closest('.cell.free');
+  if(cell&&S.canWrite&&S.editing&&!cell.classList.contains('void')){const d=+cell.dataset.d;openEditor({month:cell.dataset.k,lane:+cell.dataset.l,start:d,end:d},true);return}
+  const nf=t.closest('[data-nfmt]');if(nf){openNoteFmt(+nf.dataset.nfmt,nf.dataset.part);return}
+  const nd=t.closest('[data-ndel]');if(nd){const notes=(S.settings.notes||[]).slice();logEv('ลบบรรทัดหมายเหตุ',(notes[+nd.dataset.ndel]||{}).text||'');notes.splice(+nd.dataset.ndel,1);saveSettings({notes});return}
+  if(t.closest('[data-nadd]')){const notes=(S.settings.notes||[]).slice();logEv('เพิ่มบรรทัดหมายเหตุ','');notes.push({label:'',text:': ',color:'',size:12});saveSettings({notes});return}
+});
+sheet.addEventListener('change',ev=>{
+  const t=ev.target;
+  if(t.id==='unitIn'){logEv('แก้หัวกระดาษ',(S.settings.unit||'')+' → '+t.value.trim());saveSettings({unit:t.value.trim()||'แผนภารกิจ'});return}
+  if(t.dataset.nlab!=null){const notes=(S.settings.notes||[]).slice();logEv('แก้หัวข้อหมายเหตุ',((notes[+t.dataset.nlab]||{}).label||'')+' → '+t.value);notes[+t.dataset.nlab]=Object.assign({},notes[+t.dataset.nlab],{label:t.value});saveSettings({notes});return}
+  if(t.dataset.note!=null){const notes=(S.settings.notes||[]).slice();logEv('แก้ข้อความหมายเหตุ',((notes[+t.dataset.note]||{}).text||'')+' → '+t.value);notes[+t.dataset.note]=Object.assign({},notes[+t.dataset.note],{text:t.value});saveSettings({notes})}
+});
+
+$('prev').onclick=()=>{S.offset--;render()};
+$('next').onclick=()=>{S.offset++;render()};
+$('now').onclick=()=>{S.offset=0;render()};
+$('editBtn').onclick=async()=>{
+  if(S.editing){S.editing=false;S.armed=null;render();maybeRelease();return}
+  if(!needName(()=>$('editBtn').onclick()))return;
+  if(!(await getLock())){lockBusyToast();return}
+  S.editing=true;S.armed=null;render();
+};
+
+$('logBtn').onclick=()=>openLogs();
+$('addBtn').onclick=()=>{const m=windowMonths()[0],t=today();const k=m.key;const n=lanesOf(k);openEditor({month:k,lane:n,start:S.offset===0?t.d:1,end:S.offset===0?t.d:1},true)};
+
+// ---------- paper setup ----------
+const PAPERS={A4:[297,210,9],A3:[420,297,8]};
+let PAPER={size:'A4',orient:'landscape'}; // original workbook: A4 landscape, fit to 1 page
+try{const p=JSON.parse(localStorage.getItem('mp_paper')||'null');if(p&&PAPERS[p.size]&&(p.orient==='landscape'||p.orient==='portrait'))PAPER=p}catch(e){}
+function paperMM(){let [w,h]=PAPERS[PAPER.size];if(PAPER.orient==='portrait')[w,h]=[h,w];return{w,h,m:6}}
+const MABBR=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+// file name: yymmdd (Buddhist year)_รวม_ภารกิจ+แผนซ่อมบำรุง_HHMM TH-LT, in Thailand local time
+function fileBase(){
+  let p={};try{new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).forEach(x=>p[x.type]=x.value)}catch(e){}
+  if(!p.year){const d=new Date(Date.now()+(7*60+new Date().getTimezoneOffset())*60000);p={year:String(d.getFullYear()),month:pad(d.getMonth()+1),day:pad(d.getDate()),hour:pad(d.getHours()),minute:pad(d.getMinutes())}}
+  return String(+p.year+543).slice(-2)+p.month+p.day+'_รวม_ภารกิจ+แผนซ่อมบำรุง_'+p.hour+p.minute+' TH-LT';
+}
+function toast(msg,ms){let t=document.querySelector('.toast');if(!t){t=document.createElement('div');t.className='toast';t.setAttribute('role','status');document.body.appendChild(t)}t.textContent=msg;clearTimeout(toast._t);t.hidden=false;toast._t=setTimeout(()=>{t.hidden=true},ms||3200)}
+async function offer(filename,data){
+  try{const b=data instanceof Blob?data:new Blob([data]);const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('ดาวน์โหลด '+filename+' แล้ว')}
+  catch(e){toast('บันทึกไฟล์ไม่สำเร็จ')}
+}
+
+// ---------- render the sheet to a canvas (same picture for PREVIEW and PDF) ----------
+async function renderSheetCanvas(){
+  S._exp=true;
+  const host=document.createElement('div');host.className='exportHost';host.setAttribute('aria-hidden','true');
+  const sh=document.createElement('div');sh.className='sheet';host.appendChild(sh);document.body.appendChild(host);
+  try{
+    sh.innerHTML=sheetHTML();
+    try{if(document.fonts&&document.fonts.ready)await document.fonts.ready}catch(e){}
+    const P=paperMM(),cw=P.w-2*P.m,ch=P.h-2*P.m;let best=null;
+    // pick the sheet width that lets the page be printed largest on one sheet of paper
+    for(let W=1520;W<=3000;W+=40){sh.style.width=W+'px';fitLabels(sh);const H=sh.offsetHeight;const sc=Math.min(cw/W,ch/H);if(!best||sc>best.sc)best={W,sc}}
+    sh.style.width=best.W+'px';fitLabels(sh);
+    const o=sh.getBoundingClientRect();
+    const k=Math.min(3,3000/Math.max(o.width,o.height));
+    const cv=document.createElement('canvas');cv.width=Math.round(o.width*k);cv.height=Math.round(o.height*k);
+    const ctx=cv.getContext('2d');ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,cv.width,cv.height);
+    paintEl(sh,ctx,o,k);
+    return{canvas:cv,cssW:o.width,cssH:o.height,sc:best.sc};
+  }finally{host.remove();S._exp=false}
+}
+const clear=c=>!c||c==='transparent'||/rgba\(.*,\s*0\)$/.test(c);
+const SEG=(typeof Intl!=='undefined'&&Intl.Segmenter)?new Intl.Segmenter('th',{granularity:'grapheme'}):null;
+function paintEl(el,ctx,o,k){
+  const cs=getComputedStyle(el);if(cs.display==='none'||cs.visibility==='hidden')return;
+  const r=el.getBoundingClientRect(),x=(r.left-o.left)*k,y=(r.top-o.top)*k,w=r.width*k,h=r.height*k;
+  if(!clear(cs.backgroundColor)){ctx.fillStyle=cs.backgroundColor;ctx.fillRect(x,y,w,h)}
+  [['Top',(b)=>[x,y,w,b]],['Right',(b)=>[x+w-b,y,b,h]],['Bottom',(b)=>[x,y+h-b,w,b]],['Left',(b)=>[x,y,b,h]]].forEach(([s,f])=>{
+    const bw=parseFloat(cs['border'+s+'Width']);if(bw>0&&cs['border'+s+'Style']!=='none'&&!clear(cs['border'+s+'Color'])){ctx.fillStyle=cs['border'+s+'Color'];ctx.fillRect(...f(Math.max(1,bw*k)))}
+  });
+  if(el.classList.contains('today')){ctx.fillStyle='#C00000';ctx.fillRect(x,y+h-3*k,w,3*k)}
+  const clip=cs.overflow==='hidden'||cs.overflowX==='hidden';
+  if(clip){ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip()}
+  for(const n of el.childNodes){if(n.nodeType===3)paintText(n,cs,ctx,o,k);else if(n.nodeType===1)paintEl(n,ctx,o,k)}
+  if(clip)ctx.restore();
+}
+// draws text exactly where the browser laid it out, line by line (keeps Thai line breaks and marks intact)
+function paintText(node,cs,ctx,o,k){
+  const txt=node.nodeValue;if(!txt||!txt.trim())return;
+  const parts=SEG?Array.from(SEG.segment(txt),s=>s.segment):Array.from(txt);
+  const rg=document.createRange();const lines=[];let cur=null,off=0;
+  for(const g of parts){
+    rg.setStart(node,off);rg.setEnd(node,off+g.length);off+=g.length;
+    if(g==='\n')continue;
+    const rr=rg.getClientRects()[0];if(!rr||(rr.width===0&&!g.trim()))continue;
+    if(!cur||Math.abs(rr.top-cur.top)>rr.height*0.5){cur={top:rr.top,left:null,text:''};lines.push(cur)}
+    if(cur.left===null){if(!g.trim())continue;cur.left=rr.left}
+    cur.text+=g;
+  }
+  const px=parseFloat(cs.fontSize)*k;
+  ctx.font=cs.fontStyle+' '+cs.fontWeight+' '+px+'px '+cs.fontFamily;
+  ctx.fillStyle=cs.color;ctx.textBaseline='alphabetic';ctx.textAlign='left';
+  // text-decoration is not inherited by computed style, so look up to the cell that set it
+  let dec=null;for(let a=node.parentElement;a&&!a.classList.contains('sheet');a=a.parentElement){const c=getComputedStyle(a);if(/underline/.test(c.textDecorationLine)){dec=c;break}}
+  lines.forEach(L=>{if(!L.text.trim())return;const tx=L.text.replace(/\s+$/,'');const m=ctx.measureText(tx);const asc=m.fontBoundingBoxAscent||px*0.9;const x=(L.left-o.left)*k,base=(L.top-o.top)*k+asc;ctx.fillText(tx,x,base);
+    if(dec){const off=(parseFloat(dec.textUnderlineOffset)||parseFloat(cs.fontSize)*0.1)*k,th=Math.max(1,(parseFloat(dec.textDecorationThickness)||1)*k);const y=base+off+th;ctx.fillRect(x,y,m.width,th);if(dec.textDecorationStyle==='double')ctx.fillRect(x,y+th*3,m.width,th)}});
+}
+
+// ---------- PDF (one page, image of the sheet) ----------
+async function buildPDF(c){
+  const P=paperMM(),pt=v=>v*72/25.4,f=v=>(Math.round(v*100)/100).toString();
+  const pw=pt(P.w),ph=pt(P.h),sc=Math.min((P.w-2*P.m)/c.cssW,(P.h-2*P.m)/c.cssH);
+  const iw=pt(c.cssW*sc),ih=pt(c.cssH*sc),ix=(pw-iw)/2,iy=ph-pt(P.m)-ih;
+  const W=c.canvas.width,H=c.canvas.height;let img,filter;
+  if(typeof CompressionStream!=='undefined'){
+    const px=c.canvas.getContext('2d').getImageData(0,0,W,H).data,rgb=new Uint8Array(W*H*3);
+    for(let i=0,j=0;i<px.length;i+=4){rgb[j++]=px[i];rgb[j++]=px[i+1];rgb[j++]=px[i+2]}
+    img=new Uint8Array(await new Response(new Blob([rgb]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer());filter='/FlateDecode';
+  }else{
+    const b=await new Promise(r=>c.canvas.toBlob(r,'image/jpeg',0.95));img=new Uint8Array(await b.arrayBuffer());filter='/DCTDecode';
+  }
+  const enc=new TextEncoder(),parts=[],offs=[];let len=0;
+  const add=b=>{if(typeof b==='string')b=enc.encode(b);parts.push(b);len+=b.length};
+  const obj=(n,d,st)=>{offs[n]=len;add(n+' 0 obj\n'+d);if(st){add('\nstream\n');add(st);add('\nendstream')}add('\nendobj\n')};
+  add('%PDF-1.4\n');add(new Uint8Array([37,226,227,207,211,10]));
+  const content=enc.encode('q '+f(iw)+' 0 0 '+f(ih)+' '+f(ix)+' '+f(iy)+' cm /Im0 Do Q');
+  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+f(pw)+' '+f(ph)+'] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>');
+  obj(4,'<< /Length '+content.length+' >>',content);
+  obj(5,'<< /Type /XObject /Subtype /Image /Width '+W+' /Height '+H+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter '+filter+' /Length '+img.length+' >>',img);
+  const xr=len;let x='xref\n0 6\n0000000000 65535 f \n';for(let i=1;i<=5;i++)x+=String(offs[i]).padStart(10,'0')+' 00000 n \n';
+  add(x+'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF\n');
+  return new Blob(parts,{type:'application/pdf'});
+}
+
+// ---------- Excel (.xlsx, same layout as the original sheet, fit to 1 page) ----------
+function colL(c){let s='';while(c>0){const m=(c-1)%26;s=String.fromCharCode(65+m)+s;c=Math.floor((c-1)/26)}return s}
+const hex6=c=>{c=(c||'#FFFFFF').replace('#','').toUpperCase();if(c.length===3)c=c.split('').map(x=>x+x).join('');return c};
+const xesc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
+function pastBlend(h){h=hex6(h);const r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);
+  // 30% red overlay, same as the transparent red box in the original
+  return [r*0.7+255*0.3,g*0.7,b*0.7].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('').toUpperCase()}
+function buildXLSX(){
+  const t=today(),H=headInfo(),ms=windowMonths();
+  const fonts=[],fills=['<fill><patternFill patternType="none"/></fill>','<fill><patternFill patternType="gray125"/></fill>'],xfs=[],fI={},flI={},xI={};
+  const uTag=u=>!u?'':(u==='single'?'<u/>':'<u val="'+u+'"/>');
+  const font=(sz,b,col,it,u)=>{const key=sz+'|'+b+'|'+col+'|'+!!it+'|'+(u||'');if(fI[key]==null){fI[key]=fonts.length;fonts.push('<font>'+(b?'<b/>':'')+(it?'<i/>':'')+uTag(u)+'<sz val="'+sz+'"/><color rgb="FF'+col+'"/><name val="TH SarabunPSK"/><charset val="222"/></font>')}return fI[key]};
+  const fill=hx=>{if(!hx)return 0;if(flI[hx]==null){flI[hx]=fills.length;fills.push('<fill><patternFill patternType="solid"><fgColor rgb="FF'+hx+'"/><bgColor indexed="64"/></patternFill></fill>')}return flI[hx]};
+  const xf=(fo,fl,bd,ha,wrap)=>{const key=[fo,fl,bd,ha,wrap].join('|');if(xI[key]==null){xI[key]=xfs.length;xfs.push('<xf numFmtId="0" fontId="'+fo+'" fillId="'+fl+'" borderId="'+bd+'" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="'+ha+'" vertical="center"'+(wrap?' wrapText="1"':'')+'/></xf>')}return xI[key]};
+  // borders: black, thin inside, medium around each month block and the header row (as in the original workbook)
+  const bds=['<border><left/><right/><top/><bottom/><diagonal/></border>'],bI={};
+  const bd=(l,rr,tp,bt)=>{const key=[l,rr,tp,bt].join('|');if(bI[key]==null){bI[key]=bds.length;const e=(n,v)=>v?'<'+n+' style="'+(v==='m'?'medium':'thin')+'"><color rgb="FF000000"/></'+n+'>':'<'+n+'/>';bds.push('<border>'+e('left',l)+e('right',rr)+e('top',tp)+e('bottom',bt)+'<diagonal/></border>')}return bI[key]};
+  const B1=bd('t','t','t','t'),B2=bd('m','m','m','m');
+  const gb=(L,d,n)=>bd(d===1?'m':'t',d===31?'m':'t',L===0?'m':'t',L===n-1?'m':'t');
+  font(12,false,'000000');xf(0,0,0,'general',false);
+  const rows={},hts={},merges=[];
+  const put=(r,c,v,s)=>{(rows[r]=rows[r]||{})[c]={v,s}};
+  const style=(r,c,s)=>{(rows[r]=rows[r]||{});if(rows[r][c])rows[r][c].s=s;else rows[r][c]={v:null,s}};
+  const merge=(r1,c1,r2,c2)=>{if(r1!==r2||c1!==c2)merges.push(colL(c1)+r1+':'+colL(c2)+r2)};
+  let r=1;
+  const sTitle=xf(font(16,true,'000000'),0,0,'center',false);
+  put(r,1,H.unit+H.rest,sTitle);merge(r,1,r,32);hts[r]=26;r++;
+  put(r,1,H.sub,sTitle);merge(r,1,r,32);hts[r]=24;r++;
+  hts[r]=6;r++;
+  ms.forEach(M=>{
+    const sHead=xf(font(12,true,'000000'),fill('D6DCE4'),B2,'center',false),sHeadVoid=xf(font(12,true,'000000'),fill('000000'),B2,'center',false),sHeadHol=xf(font(12,true,'C00000'),fill('D6DCE4'),2,'center',false);
+    put(r,1,'เดือน',sHead);for(let d=1;d<=31;d++)put(r,1+d,thd(d),d>M.days?sHeadVoid:sHead);hts[r]=21;r++;
+    const n=lanesOf(M.key),r0=r;
+    let pastTo=0;if(M.y<t.y||(M.y===t.y&&M.m<t.m))pastTo=M.days;else if(M.y===t.y&&M.m===t.m)pastTo=t.d-1;
+    put(r0,1,MONTHS[M.m-1]+'\n'+thd(String(M.y+543).slice(-2)),xf(font(16,true,'000000'),fill('DBDBDB'),B2,'center',true));
+    for(let i=1;i<n;i++)style(r0+i,1,xf(font(16,true,'000000'),fill('DBDBDB'),B2,'center',true));
+    merge(r0,1,r0+n-1,1);
+    const occ={};
+    for(let L=0;L<n;L++){hts[r0+L]=20;for(let d=1;d<=31;d++){const base=isOff(M,d)?'E3E3E3':'FFFFFF',bg=d>M.days?'000000':(d<=pastTo?pastBlend(base):(base==='FFFFFF'?null:base));put(r0+L,1+d,null,xf(0,fill(bg),gb(L,d,n),'center',true))}}
+    evsOf(M.key).sort((a,b)=>a.lane-b.lane||a.start-b.start).forEach(e=>{
+      const s=Math.max(1,e.start),en=Math.min(Math.max(e.end,s),M.days),rr=Math.max(1,Math.min(e.rows||1,n-e.lane));
+      let free=true;for(let i=0;i<rr;i++)for(let d=s;d<=en;d++)if(occ[(e.lane+i)+':'+d])free=false;
+      if(!free&&occ[e.lane+':'+s])return;
+      const allPast=en<=pastTo;
+      const fl=allPast?pastBlend(fillColor(e)):hex6(fillColor(e));
+      const fo=font(e.size||12,!!(e.bold||e.status==='cancelled'),hex6(textColor(e)),e.italic,e.underline),flId=fill(fl),sxAt=(L,d)=>xf(fo,flId,gb(L,d,n),'center',true),sx=sxAt(e.lane,s);
+      const lastD=free?en:s,lastR=free?rr:1;
+      for(let i=0;i<lastR;i++)for(let d=s;d<=lastD;d++){occ[(e.lane+i)+':'+d]=1;style(r0+e.lane+i,1+d,sxAt(e.lane+i,d))}
+      put(r0+e.lane,1+s,label(e),sx);merge(r0+e.lane,1+s,r0+e.lane+lastR-1,1+lastD);
+      if(lastR===1){const lines=label(e).split('\n').length;hts[r0+e.lane]=Math.max(hts[r0+e.lane],Math.ceil(lines*(e.size||12)*1.15+4))}
+    });
+    r=r0+n;hts[r]=8;r++;
+  });
+  // legend
+  const sLeg=xf(font(12,false,'000000'),0,0,'left',false);
+  put(r,1,'หมายเหตุ',xf(font(12,true,'000000'),0,0,'left',false));
+  LEGEND.forEach((kk,i)=>{const c=2+i*5;put(r,c,null,xf(0,fill(hex6(TYPES[kk].fill)),B1,'center',false));put(r,c+1,TYPES[kk].label,sLeg);merge(r,c+1,r,c+4)});
+  hts[r]=22;r++;
+  hts[r]=6;r++;
+  H.notes.forEach(nn=>{if(!nn.text&&!nn.label)return;
+    const L=noteFmt(nn,'l'),T=noteFmt(nn,'t');
+    const sl=xf(font(L.size,!!L.bold,hex6(L.color||'#000000'),L.italic,L.underline),fill(L.bg?hex6(L.bg):null),0,'left',false);
+    const tc=hex6(T.color||'#000000'),st=xf(font(T.size,!!T.bold,tc,T.italic,T.underline),fill(T.bg?hex6(T.bg):null),0,'left',false);
+    put(r,1,nn.label||null,sl);
+    put(r,2,{runs:richRuns(nn.text||'').map(u=>Object.assign(u,{b:u.b||!!T.bold})),sz:T.size,col:tc,i:!!T.italic,u:T.underline||''},st);for(let c=3;c<=32;c++)style(r,c,st);merge(r,2,r,32);hts[r]=Math.max(21,Math.ceil(Math.max(L.size,T.size)*1.7));r++});
+  const last=r-1;
+  let sd='';
+  for(let i=1;i<=last;i++){
+    const row=rows[i]||{};sd+='<row r="'+i+'"'+(hts[i]?' ht="'+hts[i]+'" customHeight="1"':'')+'>';
+    Object.keys(row).map(Number).sort((a,b)=>a-b).forEach(c=>{const ce=row[c],ref=colL(c)+i;
+      if(ce.v==null||ce.v==='')sd+='<c r="'+ref+'" s="'+(ce.s||0)+'"/>';
+      else if(typeof ce.v==='object')sd+='<c r="'+ref+'" s="'+(ce.s||0)+'" t="inlineStr"><is>'+ce.v.runs.map(u=>'<r><rPr>'+(u.b?'<b/>':'')+(ce.v.i?'<i/>':'')+uTag(ce.v.u)+'<sz val="'+ce.v.sz+'"/><color rgb="FF'+ce.v.col+'"/><rFont val="TH SarabunPSK"/><charset val="222"/></rPr><t xml:space="preserve">'+xesc(u.t)+'</t></r>').join('')+'</is></c>';
+      else sd+='<c r="'+ref+'" s="'+(ce.s||0)+'" t="inlineStr"><is><t xml:space="preserve">'+xesc(ce.v)+'</t></is></c>'});
+    sd+='</row>';
+  }
+  const P=paperMM();
+  const sheet='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><tabColor rgb="FFFFC000"/><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:AF'+last+'"/><sheetViews><sheetView workbookViewId="0" zoomScale="85" zoomScaleNormal="85" showGridLines="0"/></sheetViews><sheetFormatPr defaultRowHeight="20" customHeight="1"/><cols><col min="1" max="1" width="15.6" customWidth="1"/><col min="2" max="32" width="8" customWidth="1"/></cols><sheetData>'+sd+'</sheetData>'+(merges.length?'<mergeCells count="'+merges.length+'">'+merges.map(m=>'<mergeCell ref="'+m+'"/>').join('')+'</mergeCells>':'')+'<printOptions horizontalCentered="1"/><pageMargins left="0.2" right="0.2" top="0.25" bottom="0.2" header="0.1" footer="0.1"/><pageSetup paperSize="'+PAPERS[PAPER.size][2]+'" orientation="'+PAPER.orient+'" fitToWidth="1" fitToHeight="1"/></worksheet>';
+  const borders='<borders count="'+bds.length+'">'+bds.join('')+'</borders>';
+  const styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="'+fonts.length+'">'+fonts.join('')+'</fonts><fills count="'+fills.length+'">'+fills.join('')+'</fills>'+borders+'<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="'+xfs.length+'">'+xfs.join('')+'</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+  const files={
+    '[Content_Types].xml':'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>',
+    '_rels/.rels':'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+    'xl/workbook.xml':'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="MASTER PLAN" sheetId="1" r:id="rId1"/></sheets><definedNames><definedName name="_xlnm.Print_Area" localSheetId="0">\'MASTER PLAN\'!$A$1:$AF$'+last+'</definedName></definedNames></workbook>',
+    'xl/_rels/workbook.xml.rels':'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>',
+    'xl/styles.xml':styles,
+    'xl/worksheets/sheet1.xml':sheet
+  };
+  return zipStore(files);
+}
+// minimal ZIP writer (stored entries)
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
+function zipStore(files){
+  const enc=new TextEncoder(),parts=[],cd=[];let off=0;
+  for(const [name,txt] of Object.entries(files)){
+    const nb=enc.encode(name),data=enc.encode(txt),crc=crc32(data);
+    const lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(8,0,true);lh.setUint16(10,0,true);lh.setUint16(12,0x21,true);
+    lh.setUint32(14,crc,true);lh.setUint32(18,data.length,true);lh.setUint32(22,data.length,true);lh.setUint16(26,nb.length,true);lh.setUint16(28,0,true);
+    parts.push(new Uint8Array(lh.buffer),nb,data);
+    const ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);ch.setUint16(10,0,true);ch.setUint16(12,0,true);ch.setUint16(14,0x21,true);
+    ch.setUint32(16,crc,true);ch.setUint32(20,data.length,true);ch.setUint32(24,data.length,true);ch.setUint16(28,nb.length,true);ch.setUint32(42,off,true);
+    cd.push(new Uint8Array(ch.buffer),nb);off+=30+nb.length+data.length;
+  }
+  const cdSize=cd.reduce((a,b)=>a+b.length,0),end=new DataView(new ArrayBuffer(22)),n=Object.keys(files).length;
+  end.setUint32(0,0x06054b50,true);end.setUint16(8,n,true);end.setUint16(10,n,true);end.setUint32(12,cdSize,true);end.setUint32(16,off,true);
+  return new Blob([...parts,...cd,new Uint8Array(end.buffer)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+// ---------- PREVIEW ----------
+let PV=null;
+async function openPreview(){
+  PV={busy:true};drawPV();
+  try{PV.c=await renderSheetCanvas();PV.url=PV.c.canvas.toDataURL('image/png')}catch(e){PV.err='จัดหน้าไม่สำเร็จ'}
+  PV.busy=false;drawPV();
+}
+function drawPV(){
+  let m=document.getElementById('pvm');
+  if(!PV){if(m)m.remove();return}
+  if(!m){m=document.createElement('div');m.id='pvm';document.body.appendChild(m)}
+  const P=paperMM();
+  let h='<div class="pv" role="dialog" aria-modal="true" aria-labelledby="pvT"><div class="pvbar"><h2 id="pvT">PREVIEW · 1 หน้า</h2>';
+  h+='<label class="hint" for="pvSize">กระดาษ</label><select id="pvSize">'+Object.keys(PAPERS).map(s=>'<option'+(PAPER.size===s?' selected':'')+'>'+s+'</option>').join('')+'</select>';
+  h+='<select id="pvOrient" aria-label="แนวกระดาษ"><option value="landscape"'+(PAPER.orient==='landscape'?' selected':'')+'>แนวนอน</option><option value="portrait"'+(PAPER.orient==='portrait'?' selected':'')+'>แนวตั้ง</option></select>';
+  h+='<button id="pvXls">EXPORT TO EXCEL</button><button id="pvPdf" class="primary">EXPORT TO PDF</button><button id="pvClose">ปิด</button></div>';
+  if(PV.busy)h+='<div class="pvbody"><div class="pvinfo">กำลังจัดหน้ากระดาษ…</div></div>';
+  else if(PV.err)h+='<div class="pvbody"><div class="pvinfo">'+PV.err+'</div></div>';
+  else{
+    const vw=Math.max(280,window.innerWidth-40),vh=Math.max(240,window.innerHeight-150);
+    const s=Math.min(vw/P.w,vh/P.h),sc=Math.min((P.w-2*P.m)/PV.c.cssW,(P.h-2*P.m)/PV.c.cssH);
+    const iw=PV.c.cssW*sc,ih=PV.c.cssH*sc;
+    h+='<div class="pvinfo">'+PAPER.size+' '+(PAPER.orient==='landscape'?'แนวนอน':'แนวตั้ง')+' · พอดี 1 หน้า</div>';
+    h+='<div class="pvbody"><div class="paper" style="width:'+(P.w*s).toFixed(1)+'px;height:'+(P.h*s).toFixed(1)+'px"><img alt="ตัวอย่างหน้ากระดาษ" src="'+PV.url+'" style="left:'+(((P.w-iw)/2)*s).toFixed(1)+'px;top:'+(P.m*s).toFixed(1)+'px;width:'+(iw*s).toFixed(1)+'px;height:'+(ih*s).toFixed(1)+'px"></div></div>';
+  }
+  h+='</div>';m.innerHTML=h;
+  const setP=()=>{PAPER={size:$('pvSize').value,orient:$('pvOrient').value};try{localStorage.setItem('mp_paper',JSON.stringify(PAPER))}catch(e){}openPreview()};
+  $('pvSize').onchange=setP;$('pvOrient').onchange=setP;
+  $('pvClose').onclick=()=>{PV=null;drawPV()};
+  $('pvPdf').onclick=()=>exportPDF(PV&&PV.c);
+  $('pvXls').onclick=()=>exportXLS();
+}
+window.addEventListener('resize',()=>{if(PV&&!PV.busy)drawPV()});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&PV){PV=null;drawPV()}});
+let busyX=false;
+async function exportPDF(c){if(busyX)return;busyX=true;toast('กำลังสร้าง PDF…',20000);try{c=c||await renderSheetCanvas();const b=await buildPDF(c);await offer(fileBase()+'.pdf',b)}catch(e){toast('สร้าง PDF ไม่สำเร็จ')}finally{busyX=false}}
+async function exportXLS(){if(busyX)return;busyX=true;try{const b=buildXLSX();await offer(fileBase()+'.xlsx',b)}catch(e){toast('สร้างไฟล์ Excel ไม่สำเร็จ')}finally{busyX=false}}
+
+// ---------- SAVE (keeps a dated copy you can restore) ----------
+async function doSave(){
+  if(!S.db||!S.canWrite)return;if(!REC){needName(doSave);return}
+  if(!lockMine()){return withLock(doSave)}
+  if(Q.length||Qp){try{await (Qp||flushQ())}catch(e){}}
+  const t=today(),iso=t.y+'-'+pad(t.m)+'-'+pad(t.d),lbl=pad(t.d)+'_'+pad(t.m)+'_'+String(t.y+543).slice(-2);
+  S.settings=Object.assign({},S.settings,{updated:iso});
+  toast('กำลัง SAVE และเก็บไฟล์ Excel ลง Backup…',30000);setSaving(1);
+  try{
+    let b64='';try{b64=await blobToB64(buildXLSX())}catch(e){}
+    const r=await api('save',{label:lbl,iso,xlsx:b64,filename:fileBase()});
+    S.lastSnap=Object.assign({since:r.snap.at},r.snap);S.dirty=false;renderUndo();
+    toast('SAVE แล้ว · Update '+lbl+(r.backup?' · เก็บ Excel ใน Backup แล้ว':''),5000);
+    scheduleRender();await loadState();
+  }catch(e){toast('SAVE ไม่สำเร็จ: '+((e&&e.message)||''),6000);loadState().catch(()=>{})}
+  finally{setSaving(-1)}
+}
+async function pruneSnaps(){}
+let SN=null;
+async function openSnaps(){SN={busy:true,list:[]};drawSnaps();try{const r=await api('listSnaps',{limit:20});SN.list=r.list||[]}catch(e){SN.err='โหลดรายการไม่สำเร็จ'}SN.busy=false;drawSnaps()}
+function drawSnaps(){
+  const m=$('modal');if(!SN){m.innerHTML='';return}
+  let h='<div class="scrim" id="snScrim"><div class="panel" role="dialog" aria-modal="true" aria-labelledby="snT"><h2 id="snT">ฉบับที่บันทึก</h2><div class="hint">กด SAVE เพื่อเก็บฉบับใหม่ ระบบเก็บไว้ 20 ฉบับล่าสุด การเรียกคืนจะแทนที่แผนปัจจุบันทั้งหมด</div><div class="snaps">';
+  if(SN.busy)h+='<div class="hint">กำลังโหลด…</div>';else if(SN.err)h+='<div class="hint">'+SN.err+'</div>';else if(!SN.list.length)h+='<div class="hint">ยังไม่มีฉบับที่บันทึก</div>';
+  SN.list.forEach(s=>{const d=new Date(s.at);h+='<div class="snap"><span>Update '+esc(s.label||'')+(s.by?' · '+esc(s.by):'')+' · '+pad(d.getHours())+':'+pad(d.getMinutes())+' น. · '+(s.events||[]).length+' รายการ</span><button data-rs="'+esc(s.id)+'" class="'+(SN.arm===s.id?'danger':'')+'">'+(SN.arm===s.id?'ยืนยันเรียกคืน':'เรียกคืน')+'</button></div>'});
+  h+='</div><div class="acts"><span class="sp"></span><button id="snClose">ปิด</button></div></div></div>';
+  m.innerHTML=h;
+  $('snClose').onclick=()=>{SN=null;drawSnaps()};
+  $('snScrim').onclick=ev=>{if(ev.target.id==='snScrim'){SN=null;drawSnaps()}};
+  m.querySelectorAll('[data-rs]').forEach(b=>b.onclick=async()=>{const id=b.dataset.rs;if(SN.arm!==id){SN.arm=id;drawSnaps();return}const s=SN.list.find(x=>x.id===id);SN=null;drawSnaps();await withLock(()=>restoreSnap(s,'restore'))});
+}
+async function restoreSnap(s,how){
+  toast(how==='undo'?'กำลังยกเลิกการแก้ไข…':'กำลังเรียกคืน…',30000);setSaving(1);
+  try{await api('restore',{id:s.id,how});S.dirty=false;await loadState();scheduleRender();
+    toast(how==='undo'?'ยกเลิกการแก้ไขแล้ว แผนกลับไปเหมือน SAVE ล่าสุด':'เรียกคืนฉบับ Update '+(s.label||'')+' แล้ว',5000)}
+  catch(e){toast('ทำไม่สำเร็จ: '+((e&&e.message)||''),6000)}
+  finally{setSaving(-1)}
+}
+// undo all edits since the last SAVE (tap twice to confirm)
+let undoArm=0;
+async function undoEdits(){
+  if(!lockMine()&&lockOther()){lockBusyToast();return}
+  if(!S.lastSnap){toast('ยังไม่มีฉบับที่ SAVE ไว้');return}
+  if(!S.dirty){toast('ไม่มีการแก้ไขหลัง SAVE ล่าสุด');return}
+  if(Date.now()-undoArm>4000){undoArm=Date.now();$('undoBtn').textContent='แตะอีกครั้งเพื่อยืนยัน';$('undoBtn').classList.add('danger');setTimeout(()=>{undoArm=0;renderUndo()},4000);return}
+  undoArm=0;renderUndo();
+  try{await withLock(()=>restoreSnap(S.lastSnap,'undo'));S.lastSnap.since=Date.now()}catch(e){toast('ยกเลิกการแก้ไขไม่สำเร็จ')}
+}
+function renderUndo(){const b=$('undoBtn');if(!b)return;b.hidden=!S.canWrite||!S.db;if(undoArm)return;b.classList.remove('danger');b.textContent='ยกเลิกการแก้ไข';b.disabled=!S.dirty;
+  const L=S.lastSnap;b.title=!L?'ยังไม่มีฉบับที่ SAVE ไว้':S.dirty?'ย้อนแผนกลับไปเหมือนตอน SAVE ล่าสุด ('+(L.label||'')+' '+(()=>{const x=new Date(L.at);return pad(x.getHours())+':'+pad(x.getMinutes())})()+' น.)':'ไม่มีการแก้ไขหลัง SAVE ล่าสุด'}
+async function loadLastSnap(){
+  try{const r=await api('lastSnap');if(r.snap)S.lastSnap=Object.assign({since:Math.max(r.snap.at||0,r.snap.undoneAt||0)},r.snap);S.dirty=!!r.dirty}catch(e){}
+  renderUndo();
+}
+$('saveBtn').onclick=doSave;$('undoBtn').onclick=undoEdits;$('snapBtn').onclick=openSnaps;
+$('pvBtn').onclick=openPreview;$('pdfBtn').onclick=()=>exportPDF();$('xlsBtn').onclick=exportXLS;
+
+// ---------- access code (soft lock in this browser; who can open the page is set in Share) ----------
+function unlockedUntil(){return TOKEN?TOKEN_EXP:0}
+function showLock(on){$('lock').hidden=!on;$('app').hidden=on;if(on){setTimeout(()=>{const n=$('lockName'),i=$('lockIn');if(n)n.value=REC||'';if(i)i.value='';(n&&!n.value?n:i).focus()},30)}}
+$('lockForm').addEventListener('submit',async ev=>{ev.preventDefault();const nm=$('lockName').value.trim();
+  if(!nm){$('lockErr').textContent='กรุณาใส่ชื่อผู้ใช้งาน';$('lockName').focus();return}
+  const btn=$('lockForm').querySelector('button');btn.disabled=true;$('lockErr').textContent='กำลังตรวจสอบ…';
+  try{const r=await api('login',{name:nm,code:$('lockIn').value.trim()});
+    TOKEN=r.token;TOKEN_EXP=r.exp;try{localStorage.setItem('mp_tok',JSON.stringify({token:TOKEN,exp:TOKEN_EXP}))}catch(e){}
+    setRec(r.name||nm);$('lockErr').textContent='';showLock(false);startApp();}
+  catch(e){$('lockErr').textContent=(e&&e.message)||'เข้าใช้งานไม่สำเร็จ';$('lockIn').select()}
+  finally{btn.disabled=false}});
+$('lockBtn').onclick=()=>{S.editing=false;PV=null;drawPV();draft=null;drawEditor();api('leave').catch(()=>{});S.lockDoc=null;TOKEN='';TOKEN_EXP=0;try{localStorage.removeItem('mp_tok')}catch(e){}showLock(true)};
+showLock(unlockedUntil()<Date.now()||!REC);
+// session lasts 1 hour; 5 minutes before it ends, warn if there are edits not yet SAVEd
+function tickSession(){
+  if(S._lockShown!==!!lockOther()){S._lockShown=!!lockOther();render()}
+  if(!$('lock').hidden)return;const left=unlockedUntil()-Date.now();
+  if(left<=0){S.editing=false;PV=null;drawPV();draft=null;drawEditor();NF=null;drawNoteFmt();SN=null;drawSnaps();LG=null;drawLogs();$('expBar').hidden=true;showLock(true);toast('ครบ 1 ชั่วโมง กรุณาใส่รหัสใหม่');return}
+  const warn=left<=5*60e3&&S.canWrite&&(S.dirty||!!draft||!!NF);
+  $('expBar').hidden=!warn;
+  if(warn){const m=Math.floor(left/60e3),sec=Math.floor(left%60e3/1e3);$('expTxt').textContent='อีก '+m+':'+pad(sec)+' นาทีหน้านี้จะล็อก ต้องใส่รหัสใหม่ · '+(draft||NF?'มีหน้าต่างแก้ไขที่ยังไม่กดบันทึก และ':'')+'มีการแก้ไขที่ยังไม่ได้กด SAVE'}
+}
+setInterval(tickSession,1000);
+$('expSave').onclick=async()=>{if(draft){await saveDraft()}if(NF){$('nfSave')&&$('nfSave').click()}await doSave();tickSession()};
+
+// ---------- data ----------
+render();
+let started=false;
+async function startApp(){
+  S.canWrite=true;S.uid=null;S._acct='';
+  try{await loadState()}catch(e){if(e&&e.code!=='auth'){$('sheet').innerHTML='<div class="empty">'+esc((e&&e.message)||'โหลดแผนไม่สำเร็จ')+'</div>'}return}
+  if(!started){started=true;joinRoom()}else pollOnce(true);
+  loadLastSnap();
+}
+if(TOKEN&&REC&&TOKEN_EXP>Date.now())startApp();
+})();
+</script>
+</body>
+</html>
