@@ -206,8 +206,8 @@ button:disabled{opacity:.45;cursor:default}
     <span class="saving" id="saving"></span>
   </div>
   <div class="tools">
-    <button id="saveBtn" hidden title="บันทึกฉบับนี้และปรับวันที่ Update เป็นวันนี้">SAVE</button>
-    <button id="undoBtn" hidden title="ย้อนแผนกลับไปเหมือนตอนกด SAVE ครั้งล่าสุด">ยกเลิกการแก้ไข</button>
+    <button id="saveBtn" class="primary" hidden title="ออกฉบับนี้ (ปรับวันที่ Update เป็นวันนี้ เก็บ Excel ลง Backup) แล้วออกจากโหมดแก้ไข">ปิดงาน / ออกฉบับ</button>
+    <button id="undoBtn" hidden title="ย้อนแผนกลับไปเหมือนฉบับล่าสุดที่ออกไว้">ยกเลิกการแก้ไข</button>
     <button id="snapBtn" hidden title="ดูหรือเรียกคืนฉบับที่บันทึกไว้">ฉบับที่บันทึก</button>
     <button id="pvBtn">PREVIEW</button>
     <button id="xlsBtn">EXPORT TO EXCEL</button>
@@ -218,7 +218,7 @@ button:disabled{opacity:.45;cursor:default}
   </div>
   <div class="people" id="people" hidden aria-live="polite"></div>
   <div class="lockbar" id="lockBar" hidden role="status"></div>
-  <div class="expbar" id="expBar" hidden role="alert"><span id="expTxt"></span><button id="expSave" class="primary">SAVE ตอนนี้</button></div>
+  <div class="expbar" id="expBar" hidden role="alert"><span id="expTxt"></span><button id="expSave" class="primary">ปิดงาน / ออกฉบับ ตอนนี้</button></div>
   <div class="hint" id="hint"></div>
   <div class="sheetScroll"><div class="sheet" id="sheet"><div class="empty">กำลังโหลดแผน…</div></div></div>
 </div>
@@ -341,7 +341,7 @@ window.addEventListener('pagehide',()=>{try{if(TOKEN&&CONF.apiUrl&&navigator.sen
 function renderLockBar(){
   const b=$('lockBar');if(!b)return;const o=lockOther();
   if(o&&S.canWrite){const x=new Date(o.since||Date.now());b.className='lockbar';b.hidden=false;b.textContent=(o.by||'ผู้ใช้อื่น')+' กำลังแก้ไขแผนอยู่ (ตั้งแต่ '+pad(x.getHours())+':'+pad(x.getMinutes())+' น.) · ระหว่างนี้คุณดูได้อย่างเดียว แผนจะอัปเดตให้เห็นทันที และแก้ไขได้เมื่อเขาแก้เสร็จ';}
-  else if(lockMine()){b.className='lockbar mine';b.hidden=false;b.textContent='คุณกำลังแก้ไขแผน ผู้อื่นดูได้อย่างเดียว · กด "เสร็จสิ้นการแก้ไข" เมื่อแก้เสร็จ เพื่อให้คนอื่นแก้ต่อได้';}
+  else if(lockMine()){b.className='lockbar mine';b.hidden=false;b.textContent='คุณกำลังแก้ไขแผน ผู้อื่นดูได้อย่างเดียว · กด "ปิดงาน / ออกฉบับ" เมื่อแก้เสร็จ เพื่อให้คนอื่นแก้ต่อได้';}
   else b.hidden=true;
 }
 
@@ -419,7 +419,7 @@ function drawLogs(){
   h+='<div class="f"><label for="lgQ">ค้นหา (ชื่อผู้บันทึก ภารกิจ หรือการกระทำ)</label><input id="lgQ" type="text" value="'+esc(LG.q)+'"></div><div class="logs">';
   if(LG.busy)h+='<div class="hint" style="padding:10px 0">กำลังโหลด…</div>';else if(LG.err)h+='<div class="hint" style="padding:10px 0">'+LG.err+'</div>';else if(!list.length)h+='<div class="hint" style="padding:10px 0">ยังไม่มีรายการ</div>';
   list.forEach(x=>{const d=new Date(x.at);const acc=LG.prof&&x.uid&&LG.prof[x.uid]&&LG.prof[x.uid].name;
-    h+='<div class="lg"><time>'+pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+String(d.getFullYear()+543).slice(-2)+' '+pad(d.getHours())+':'+pad(d.getMinutes())+'</time><div><span class="by">'+esc(x.by||'ไม่ระบุชื่อ')+'</span>'+(acc?' <span class="acc">('+esc(acc)+')</span>':'')+'</div><div class="act">'+esc(x.action)+'</div>'+(x.detail?'<div class="det">'+esc(x.detail)+'</div>':'')+'</div>'});
+    h+='<div class="lg"><time>'+pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+String(d.getFullYear()+543).slice(-2)+' '+pad(d.getHours())+':'+pad(d.getMinutes())+'</time><div><span class="by">'+esc(x.by||'ไม่ระบุชื่อ')+'</span>'+(acc?' <span class="acc">('+esc(acc)+')</span>':'')+'</div><div class="act">'+esc(x.action==='SAVE'?'ปิดงาน / ออกฉบับ':x.action)+'</div>'+(x.detail?'<div class="det">'+esc(x.detail)+'</div>':'')+'</div>'});
   h+='</div><div class="acts"><span class="sp"></span><button id="lgClose">ปิด</button></div></div></div>';
   m.innerHTML=h;
   $('lgClose').onclick=()=>{LG=null;drawLogs()};$('lgScrim').onclick=e=>{if(e.target.id==='lgScrim'){LG=null;drawLogs()}};
@@ -462,9 +462,9 @@ function render(){
   {const busy=!!lockOther();['editBtn','addBtn','saveBtn'].forEach(id=>{$(id).disabled=busy});if(busy&&S.editing)S.editing=false}
   renderLockBar();
   $('editBtn').classList.toggle('on',S.editing&&S.canWrite);
-  $('editBtn').textContent=S.editing&&S.canWrite?'เสร็จสิ้นการแก้ไข':'โหมดแก้ไข';
+  $('editBtn').textContent='โหมดแก้ไข';$('editBtn').hidden=!S.canWrite||(S.editing&&lockMine());
   $('hint').textContent=!S.loaded?'':!S.db?'กำลังโหลด…':!S.canWrite?'ดูได้อย่างเดียว':S.editing?'แตะช่องว่างเพื่อเพิ่มภารกิจ · ลากแถบเพื่อย้ายวัน/แถว · ลากขีดสีน้ำเงินที่ขอบซ้าย/ขวาเพื่อเปลี่ยนวัน ขอบบน/ล่างเพื่อเปลี่ยนความสูง · ปุ่ม − / + ด้านซ้ายใช้ลบหรือแทรกแถว · แตะตัวเลขวันที่เพื่อตั้ง/ยกเลิกวันหยุด':'แตะภารกิจเพื่อแก้ไขสถานะ สี หรือรายละเอียด';
-  renderUndo();if(lockOther())$('undoBtn').disabled=true;$('saveBtn').hidden=!S.canWrite;$('snapBtn').hidden=!S.canWrite;$('whoWrap').hidden=!S.canWrite;$('logBtn').hidden=!S.db;
+  renderUndo();if(lockOther())$('undoBtn').disabled=true;$('saveBtn').hidden=!S.canWrite||!((S.editing&&lockMine())||S.dirty);$('snapBtn').hidden=!S.canWrite;$('whoWrap').hidden=!S.canWrite;$('logBtn').hidden=!S.db;
   if($('recName').value!==REC&&document.activeElement!==$('recName'))$('recName').value=REC;$('whoWrap').classList.toggle('need',!REC);
   const sheet=$('sheet');sheet.classList.toggle('editing',isEd());
   if(!S.loaded){return}
@@ -990,14 +990,14 @@ async function doSave(){
   if(Q.length||Qp){try{await (Qp||flushQ())}catch(e){}}
   const t=today(),iso=t.y+'-'+pad(t.m)+'-'+pad(t.d),lbl=pad(t.d)+'_'+pad(t.m)+'_'+String(t.y+543).slice(-2);
   S.settings=Object.assign({},S.settings,{updated:iso});
-  toast('กำลัง SAVE และเก็บไฟล์ Excel ลง Backup…',30000);setSaving(1);
+  toast('กำลังออกฉบับและเก็บไฟล์ Excel ลง Backup…',30000);setSaving(1);
   try{
     let b64='';try{b64=await blobToB64(buildXLSX())}catch(e){}
     const r=await api('save',{label:lbl,iso,xlsx:b64,filename:fileBase()});
     S.lastSnap=Object.assign({since:r.snap.at},r.snap);S.dirty=false;renderUndo();
-    toast('SAVE แล้ว · Update '+lbl+(r.backup?' · เก็บ Excel ใน Backup แล้ว':''),5000);
+    toast('ปิดงานแล้ว · ออกฉบับ Update '+lbl+(r.backup?' · เก็บ Excel ใน Backup แล้ว':''),5000);
     scheduleRender();await loadState();
-  }catch(e){toast('SAVE ไม่สำเร็จ: '+((e&&e.message)||''),6000);loadState().catch(()=>{})}
+  }catch(e){toast('ออกฉบับไม่สำเร็จ: '+((e&&e.message)||''),6000);loadState().catch(()=>{})}
   finally{setSaving(-1)}
 }
 async function pruneSnaps(){}
@@ -1005,7 +1005,7 @@ let SN=null;
 async function openSnaps(){SN={busy:true,list:[]};drawSnaps();try{const r=await api('listSnaps',{limit:20});SN.list=r.list||[]}catch(e){SN.err='โหลดรายการไม่สำเร็จ'}SN.busy=false;drawSnaps()}
 function drawSnaps(){
   const m=$('modal');if(!SN){m.innerHTML='';return}
-  let h='<div class="scrim" id="snScrim"><div class="panel" role="dialog" aria-modal="true" aria-labelledby="snT"><h2 id="snT">ฉบับที่บันทึก</h2><div class="hint">กด SAVE เพื่อเก็บฉบับใหม่ ระบบเก็บไว้ 20 ฉบับล่าสุด การเรียกคืนจะแทนที่แผนปัจจุบันทั้งหมด</div><div class="snaps">';
+  let h='<div class="scrim" id="snScrim"><div class="panel" role="dialog" aria-modal="true" aria-labelledby="snT"><h2 id="snT">ฉบับที่บันทึก</h2><div class="hint">กด ปิดงาน / ออกฉบับ เพื่อเก็บฉบับใหม่ ระบบเก็บไว้ 20 ฉบับล่าสุด การเรียกคืนจะแทนที่แผนปัจจุบันทั้งหมด</div><div class="snaps">';
   if(SN.busy)h+='<div class="hint">กำลังโหลด…</div>';else if(SN.err)h+='<div class="hint">'+SN.err+'</div>';else if(!SN.list.length)h+='<div class="hint">ยังไม่มีฉบับที่บันทึก</div>';
   SN.list.forEach(s=>{const d=new Date(s.at);h+='<div class="snap"><span>Update '+esc(s.label||'')+(s.by?' · '+esc(s.by):'')+' · '+pad(d.getHours())+':'+pad(d.getMinutes())+' น. · '+(s.events||[]).length+' รายการ</span><button data-rs="'+esc(s.id)+'" class="'+(SN.arm===s.id?'danger':'')+'">'+(SN.arm===s.id?'ยืนยันเรียกคืน':'เรียกคืน')+'</button></div>'});
   h+='</div><div class="acts"><span class="sp"></span><button id="snClose">ปิด</button></div></div></div>';
@@ -1017,7 +1017,7 @@ function drawSnaps(){
 async function restoreSnap(s,how){
   toast(how==='undo'?'กำลังยกเลิกการแก้ไข…':'กำลังเรียกคืน…',30000);setSaving(1);
   try{await api('restore',{id:s.id,how});S.dirty=false;await loadState();scheduleRender();
-    toast(how==='undo'?'ยกเลิกการแก้ไขแล้ว แผนกลับไปเหมือน SAVE ล่าสุด':'เรียกคืนฉบับ Update '+(s.label||'')+' แล้ว',5000)}
+    toast(how==='undo'?'ยกเลิกการแก้ไขแล้ว แผนกลับไปเหมือนฉบับล่าสุด':'เรียกคืนฉบับ Update '+(s.label||'')+' แล้ว',5000)}
   catch(e){toast('ทำไม่สำเร็จ: '+((e&&e.message)||''),6000)}
   finally{setSaving(-1)}
 }
@@ -1025,19 +1025,24 @@ async function restoreSnap(s,how){
 let undoArm=0;
 async function undoEdits(){
   if(!lockMine()&&lockOther()){lockBusyToast();return}
-  if(!S.lastSnap){toast('ยังไม่มีฉบับที่ SAVE ไว้');return}
-  if(!S.dirty){toast('ไม่มีการแก้ไขหลัง SAVE ล่าสุด');return}
+  if(!S.lastSnap){toast('ยังไม่มีฉบับที่ออกไว้');return}
+  if(!S.dirty){toast('ไม่มีการแก้ไขหลังฉบับล่าสุด');return}
   if(Date.now()-undoArm>4000){undoArm=Date.now();$('undoBtn').textContent='แตะอีกครั้งเพื่อยืนยัน';$('undoBtn').classList.add('danger');setTimeout(()=>{undoArm=0;renderUndo()},4000);return}
   undoArm=0;renderUndo();
   try{await withLock(()=>restoreSnap(S.lastSnap,'undo'));S.lastSnap.since=Date.now()}catch(e){toast('ยกเลิกการแก้ไขไม่สำเร็จ')}
 }
 function renderUndo(){const b=$('undoBtn');if(!b)return;b.hidden=!S.canWrite||!S.db;if(undoArm)return;b.classList.remove('danger');b.textContent='ยกเลิกการแก้ไข';b.disabled=!S.dirty;
-  const L=S.lastSnap;b.title=!L?'ยังไม่มีฉบับที่ SAVE ไว้':S.dirty?'ย้อนแผนกลับไปเหมือนตอน SAVE ล่าสุด ('+(L.label||'')+' '+(()=>{const x=new Date(L.at);return pad(x.getHours())+':'+pad(x.getMinutes())})()+' น.)':'ไม่มีการแก้ไขหลัง SAVE ล่าสุด'}
+  const L=S.lastSnap;b.title=!L?'ยังไม่มีฉบับที่ออกไว้':S.dirty?'ย้อนแผนกลับไปเหมือนฉบับล่าสุด ('+(L.label||'')+' '+(()=>{const x=new Date(L.at);return pad(x.getHours())+':'+pad(x.getMinutes())})()+' น.)':'ไม่มีการแก้ไขหลังฉบับล่าสุด'}
 async function loadLastSnap(){
   try{const r=await api('lastSnap');if(r.snap)S.lastSnap=Object.assign({since:Math.max(r.snap.at||0,r.snap.undoneAt||0)},r.snap);S.dirty=!!r.dirty}catch(e){}
   renderUndo();
 }
-$('saveBtn').onclick=doSave;$('undoBtn').onclick=undoEdits;$('snapBtn').onclick=openSnaps;
+async function closeWork(){
+  if(S.dirty||Q.length||Qp){await doSave();if(S.dirty)return}
+  else toast('ไม่มีการเปลี่ยนแปลงหลังฉบับล่าสุด ออกจากโหมดแก้ไขแล้ว',4000);
+  S.editing=false;S.armed=null;render();maybeRelease();
+}
+$('saveBtn').onclick=closeWork;$('undoBtn').onclick=undoEdits;$('snapBtn').onclick=openSnaps;
 $('pvBtn').onclick=openPreview;$('pdfBtn').onclick=()=>exportPDF();$('xlsBtn').onclick=exportXLS;
 
 // ---------- access code (soft lock in this browser; who can open the page is set in Share) ----------
@@ -1060,10 +1065,10 @@ function tickSession(){
   if(left<=0){S.editing=false;PV=null;drawPV();draft=null;drawEditor();NF=null;drawNoteFmt();SN=null;drawSnaps();LG=null;drawLogs();$('expBar').hidden=true;showLock(true);toast('ครบ 1 ชั่วโมง กรุณาใส่รหัสใหม่');return}
   const warn=left<=5*60e3&&S.canWrite&&(S.dirty||!!draft||!!NF);
   $('expBar').hidden=!warn;
-  if(warn){const m=Math.floor(left/60e3),sec=Math.floor(left%60e3/1e3);$('expTxt').textContent='อีก '+m+':'+pad(sec)+' นาทีหน้านี้จะล็อก ต้องใส่รหัสใหม่ · '+(draft||NF?'มีหน้าต่างแก้ไขที่ยังไม่กดบันทึก และ':'')+'มีการแก้ไขที่ยังไม่ได้กด SAVE'}
+  if(warn){const m=Math.floor(left/60e3),sec=Math.floor(left%60e3/1e3);$('expTxt').textContent='อีก '+m+':'+pad(sec)+' นาทีหน้านี้จะล็อก ต้องใส่รหัสใหม่ · '+(draft||NF?'มีหน้าต่างแก้ไขที่ยังไม่กดบันทึก และ':'')+'มีการแก้ไขที่ยังไม่ได้ปิดงาน / ออกฉบับ'}
 }
 setInterval(tickSession,1000);
-$('expSave').onclick=async()=>{if(draft){await saveDraft()}if(NF){$('nfSave')&&$('nfSave').click()}await doSave();tickSession()};
+$('expSave').onclick=async()=>{if(draft){await saveDraft()}if(NF){$('nfSave')&&$('nfSave').click()}await closeWork();tickSession()};
 
 // ---------- data ----------
 render();
