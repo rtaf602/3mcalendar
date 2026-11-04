@@ -52,7 +52,12 @@ button:disabled{opacity:.45;cursor:default}
 .editing .dh:not(.void):hover{outline:2px solid #1F4E8C;outline-offset:-2px}
 .editing .cell.free:not(.void){cursor:copy}
 .editing .cell.free:not(.void):hover{background:rgba(31,78,140,.08)}
-.dh{background:var(--dayHead);font-weight:700;text-align:center;font-size:calc(12pt*var(--fs)*1.333);display:flex;align-items:center;justify-content:center;border-right:2px solid #000;border-bottom:2px solid #000}
+.dh{background:var(--dayHead);font-weight:700;text-align:center;font-size:calc(12pt*var(--fs)*1.333);display:flex;flex-direction:column;line-height:1.05;padding:1px 0;align-items:center;justify-content:center;border-right:2px solid #000;border-bottom:2px solid #000}
+.dh .wd{font-size:calc(9pt*var(--fs)*1.333);font-weight:400}
+.dh.hol .wd{font-weight:700}
+.holname{font-family:var(--f-sheet);font-size:19px;font-weight:700;padding:2px 8px 6px;max-width:300px}
+.holin{display:flex;gap:6px;padding:4px 6px}
+.holin input{flex:1;min-width:0;font:inherit;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--panel);color:var(--fg)}
 .dh.today{box-shadow:inset 0 -3px 0 #C00000}
 .mlabel{background:var(--monthHead);font-weight:700;font-size:calc(16pt*var(--fs)*1.333);padding:2px 3px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.15;border-right:2px solid #000;border-bottom:2px solid #000}
 .mlabel span{white-space:nowrap}
@@ -690,6 +695,10 @@ function noteCSS(n){return 'color:'+(n.color||'#000000')+';'+(n.bg?'background:'
 function richRuns(t){return String(t).split(/\*\*(.+?)\*\*/).map((x,i)=>({t:x,b:i%2===1})).filter(r=>r.t)}
 function richHTML(t){return richRuns(t).map(r=>r.b?'<b>'+esc(r.t)+'</b>':esc(r.t)).join('')}
 function isWeekend(M,d){const g=new Date(M.y,M.m-1,d).getDay();return g===0||g===6}
+const WD=['อา','จ','อ','พ','พฤ','ศ','ส'],WDF=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+function dayTip(iso,hol){const n=hol?(holName(iso)||'วันหยุดเพิ่มเติม'):'';return (n?n+' · ':'')+fullDate(iso)}
+function holName(iso){return ((S.settings&&S.settings.holidayNames)||{})[iso]||''}
+function fullDate(iso){const [y,m,d]=iso.split('-').map(Number),g=new Date(y,m-1,d).getDay();return 'วัน'+WDF[g]+'ที่ '+d+' '+MONTHS[m-1]+' '+(y+543)}
 function isHol(M,d){const hs=(S.settings&&S.settings.holidays)||[];return hs.indexOf(M.y+'-'+pad(M.m)+'-'+pad(d))>=0}
 function isOff(M,d){return isWeekend(M,d)||isHol(M,d)}
 function monthHTML(M,t){
@@ -699,11 +708,12 @@ function monthHTML(M,t){
   evs.forEach(e=>{for(let r=e.lane;r<e.lane+(e.rows||1)&&r<n;r++)for(let d=e.start;d<=Math.min(e.end,31);d++)occ[r][d]=true});
   let h='<div class="month" data-month="'+k+'">';
   h+='<div class="mlabel" style="grid-column:1;grid-row:1">เดือน</div><div class="gut" style="grid-column:2;grid-row:1"></div>';
-  for(let d=1;d<=31;d++){const isT=(M.y===t.y&&M.m===t.m&&d===t.d),v=d>M.days,hol=!v&&isHol(M,d);h+='<div class="dh'+(d===31?' lc':'')+(isT?' today':'')+(v?' void':'')+(hol?' hol':'')+'" data-hk="'+k+'" data-hd="'+d+'" title="'+(v?'':hol?'วันหยุดเพิ่มเติม':isWeekend(M,d)?'เสาร์-อาทิตย์':'')+'" style="grid-column:'+(2+d)+';grid-row:1'+(v?';background:var(--void);color:#000':'')+'">'+thd(d)+'</div>'}
+  for(let d=1;d<=31;d++){const isT=(M.y===t.y&&M.m===t.m&&d===t.d),v=d>M.days,hol=!v&&isHol(M,d);h+='<div class="dh'+(d===31?' lc':'')+(isT?' today':'')+(v?' void':'')+(hol?' hol':'')+'" data-hk="'+k+'" data-hd="'+d+'" title="'+(v?'':esc(dayTip(k+'-'+pad(d),hol)))+'" style="grid-column:'+(2+d)+';grid-row:1'+(v?';background:var(--void);color:#000':'')+'"><span class="dn">'+thd(d)+'</span>'+(v?'':'<span class="wd">'+WD[new Date(M.y,M.m-1,d).getDay()]+'</span>')+'</div>'}
   h+='<div class="mlabel lr" style="grid-column:1;grid-row:2/span '+n+'"><span>'+MONTHS[M.m-1]+'</span><span>'+thd(String(M.y+543).slice(-2))+'</span>'+'</div>';
+  const holT=[];for(let d=1;d<=M.days;d++)if(isHol(M,d))holT[d]=esc(holName(k+'-'+pad(d))||'วันหยุดเพิ่มเติม');
   for(let L=0;L<n;L++){
     h+='<div class="gut'+(L===n-1?' lr':'')+'" style="grid-column:2;grid-row:'+(L+2)+'">'+(ed?'<button data-rowmenu="'+k+':'+L+'" aria-label="จัดการแถวที่ '+(L+1)+'" aria-haspopup="menu" title="แทรก/ลบแถว">⋮</button>':'')+'</div>';
-    for(let d=1;d<=31;d++){h+='<div class="cell'+(d===31?' lc':'')+(L===n-1?' lr':'')+(d>M.days?' void':(isOff(M,d)?' off':''))+(occ[L][d]?'':' free')+(ed&&UI.cell&&UI.cell.k===k&&UI.cell.l===L&&UI.cell.d===d?' csel':'')+'" data-k="'+k+'" data-l="'+L+'" data-d="'+d+'" style="grid-column:'+(2+d)+';grid-row:'+(L+2)+'"></div>'}
+    for(let d=1;d<=31;d++){h+='<div class="cell'+(d===31?' lc':'')+(L===n-1?' lr':'')+(d>M.days?' void':(isOff(M,d)?' off':''))+(occ[L][d]?'':' free')+(ed&&UI.cell&&UI.cell.k===k&&UI.cell.l===L&&UI.cell.d===d?' csel':'')+(holT[d]?'" title="'+holT[d]:'')+'" data-k="'+k+'" data-l="'+L+'" data-d="'+d+'" style="grid-column:'+(2+d)+';grid-row:'+(L+2)+'"></div>'}
   }
   evs.forEach(e=>{
     const s=Math.max(1,e.start),en=Math.min(Math.max(e.end,s),31),r=Math.min(e.rows||1,n-e.lane);
@@ -1042,11 +1052,26 @@ sheet.addEventListener('dblclick',ev=>{if(!isEd()||ev.target.closest('.notes,.ti
   if(isTouch()){ev.preventDefault();if(evEl){UI.sel=evEl.dataset.id;UI.cell=null;render()}focusName();return}
   if(evEl){UI.sel=evEl.dataset.id;startInline(evEl.dataset.id);return}
   const c=ev.target.closest('.cell');if(c&&!c.classList.contains('void')){const nid=newMission(c.dataset.k,+c.dataset.l,+c.dataset.d);startInline(nid,'')}});
+// day header: full date + official holiday name; in edit mode also set/rename/remove the holiday
+function dayPop(anchor,iso){
+  const hs=(S.settings&&S.settings.holidays)||[],on=hs.indexOf(iso)>=0,nm=holName(iso),[y,m,d]=iso.split('-').map(Number),wk=[0,6].indexOf(new Date(y,m-1,d).getDay())>=0;
+  let h='<div class="pophead">'+esc(fullDate(iso))+'</div><div class="holname">'+esc(on?(nm||'วันหยุดเพิ่มเติม'):wk?'วันหยุดเสาร์-อาทิตย์':'วันทำงาน')+'</div>';
+  if(isEd())h+='<div class="holin"><input id="holIn" type="text" maxlength="120" placeholder="ชื่อวันหยุด (ชื่อทางการเต็ม)" value="'+esc(nm)+'" aria-label="ชื่อวันหยุด"></div><button class="mi" data-v="s">'+(on?'บันทึกชื่อวันหยุด':'ตั้งเป็นวันหยุด')+'</button>'+(on?'<button class="mi" data-v="t" style="color:var(--danger)">ยกเลิกวันหยุด</button>':'');
+  openPop(anchor,h,v=>{
+    if(v==='s'){const n=($('holIn')&&$('holIn').value.trim())||'';
+      commit(on?'แก้ชื่อวันหยุด':'เพิ่มวันหยุด',()=>{const list=hs.filter(x=>x!==iso).concat([iso]).sort(),names=Object.assign({},S.settings.holidayNames||{});if(n)names[iso]=n;else delete names[iso];S.settings=Object.assign({},S.settings,{holidays:list,holidayNames:names})},{detail:iso+(n?' '+n:'')});
+      toast((on?'บันทึกชื่อวันหยุด ':'เพิ่มวันหยุด ')+iso,{undo:true})}
+    else if(v==='t'){commit('ยกเลิกวันหยุด',()=>{const names=Object.assign({},S.settings.holidayNames||{});delete names[iso];S.settings=Object.assign({},S.settings,{holidays:hs.filter(x=>x!==iso),holidayNames:names})},{detail:iso+(nm?' '+nm:'')});toast('ยกเลิกวันหยุด '+iso,{undo:true})}
+  });
+  const i=$('holIn');if(i){if(!isTouch())i.focus();i.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();$('pop').querySelector('[data-v="s"]').click()}else if(e.key==='Escape')closePop()})}
+}
 sheet.addEventListener('click',ev=>{
   const t=ev.target;
-  if(!isEd()){const evEl=t.closest('.ev');if(evEl&&S.events[evEl.dataset.id])openEditor(S.events[evEl.dataset.id],false);return}
-  const h=t.closest('.dh[data-hd]');if(h&&!h.classList.contains('void')){const iso=h.dataset.hk+'-'+pad(+h.dataset.hd),on=((S.settings&&S.settings.holidays)||[]).indexOf(iso)>=0;
-    openPop(h,'<div class="pophead">วันที่ '+(+h.dataset.hd)+'</div><button class="mi" data-v="t">'+(on?'ยกเลิกวันหยุด':'ตั้งเป็นวันหยุด')+'</button>',()=>{commit(on?'ยกเลิกวันหยุด':'เพิ่มวันหยุด',()=>{const hs=((S.settings&&S.settings.holidays)||[]).filter(x=>x!==iso);if(!on)hs.push(iso);hs.sort();S.settings=Object.assign({},S.settings,{holidays:hs})},{detail:iso});toast((on?'ยกเลิกวันหยุด ':'เพิ่มวันหยุด ')+iso,{undo:true})});return}
+  if(!isEd()){const evEl=t.closest('.ev');if(evEl&&S.events[evEl.dataset.id]){openEditor(S.events[evEl.dataset.id],false);return}
+    const dh=t.closest('.dh[data-hd]');if(dh&&!dh.classList.contains('void')){dayPop(dh,dh.dataset.hk+'-'+pad(+dh.dataset.hd));return}
+    const c=t.closest('.cell[title]');if(c){dayPop(c,c.dataset.k+'-'+pad(+c.dataset.d));return}
+    return}
+  const h=t.closest('.dh[data-hd]');if(h&&!h.classList.contains('void')){dayPop(h,h.dataset.hk+'-'+pad(+h.dataset.hd));return}
   const rm=t.closest('[data-rowmenu]');if(rm){const [k,L]=rm.dataset.rowmenu.split(':');const l=+L;
     openPop(rm,'<div class="pophead">แถวที่ '+(l+1)+'</div><button class="mi" data-v="above">แทรกแถวด้านบน</button><button class="mi" data-v="below">แทรกแถวด้านล่าง</button><div class="sep"></div><button class="mi" data-v="del" style="color:var(--danger)">ลบแถวนี้</button>',
       (v,btn)=>{if(v==='above')insertRow(k,l);else if(v==='below')insertRow(k,l+1);else{const has=evsOf(k).some(e=>e.lane===l&&(e.rows||1)===1);
@@ -1098,11 +1123,11 @@ let PAPER={size:'A4',orient:'landscape'}; // original workbook: A4 landscape, fi
 try{const p=JSON.parse(localStorage.getItem('mp_paper')||'null');if(p&&PAPERS[p.size]&&(p.orient==='landscape'||p.orient==='portrait'))PAPER=p}catch(e){}
 function paperMM(){let [w,h]=PAPERS[PAPER.size];if(PAPER.orient==='portrait')[w,h]=[h,w];return{w,h,m:6}}
 const MABBR=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-// file name: yymmdd (Buddhist year)_รวม_ภารกิจ+แผนซ่อมบำรุง_HHMM TH-LT, in Thailand local time
+// file name: yymmdd (Buddhist year) HHMMTH-LT รวม_ภารกิจ+แผนซ่อมบำรุง 602, in Thailand local time
 function fileBase(){
   let p={};try{new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).forEach(x=>p[x.type]=x.value)}catch(e){}
   if(!p.year){const d=new Date(Date.now()+(7*60+new Date().getTimezoneOffset())*60000);p={year:String(d.getFullYear()),month:pad(d.getMonth()+1),day:pad(d.getDate()),hour:pad(d.getHours()),minute:pad(d.getMinutes())}}
-  return String(+p.year+543).slice(-2)+p.month+p.day+'_รวม_ภารกิจ+แผนซ่อมบำรุง_'+p.hour+p.minute+' TH-LT';
+  return String(+p.year+543).slice(-2)+p.month+p.day+' '+p.hour+p.minute+'TH-LT รวม_ภารกิจ+แผนซ่อมบำรุง 602';
 }
 function toast(msg,opt){if(typeof opt==='number')opt={ms:opt};opt=opt||{};let t=document.querySelector('.toast');if(!t){t=document.createElement('div');t.className='toast';t.setAttribute('role','status');document.body.appendChild(t)}
   t.innerHTML='';const sp=document.createElement('span');sp.textContent=msg;t.appendChild(sp);
@@ -1229,8 +1254,8 @@ function buildXLSX(){
   put(r,1,H.sub,sTitle);merge(r,1,r,32);hts[r]=24;r++;
   hts[r]=6;r++;
   ms.forEach(M=>{
-    const sHead=xf(font(12,true,'000000'),fill('D6DCE4'),B2,'center',false),sHeadVoid=xf(font(12,true,'000000'),fill('000000'),B2,'center',false),sHeadHol=xf(font(12,true,'C00000'),fill('D6DCE4'),2,'center',false);
-    put(r,1,'เดือน',sHead);for(let d=1;d<=31;d++)put(r,1+d,thd(d),d>M.days?sHeadVoid:sHead);hts[r]=21;r++;
+    const sHead=xf(font(12,true,'000000'),fill('D6DCE4'),B2,'center',true),sHeadVoid=xf(font(12,true,'000000'),fill('000000'),B2,'center',false),sHeadHol=xf(font(12,true,'C00000'),fill('D6DCE4'),2,'center',false);
+    put(r,1,'เดือน',sHead);for(let d=1;d<=31;d++)put(r,1+d,d>M.days?thd(d):thd(d)+'\n'+WD[new Date(M.y,M.m-1,d).getDay()],d>M.days?sHeadVoid:sHead);hts[r]=34;r++;
     const n=lanesOf(M.key),r0=r;
     let pastTo=0;if(M.y<t.y||(M.y===t.y&&M.m<t.m))pastTo=M.days;else if(M.y===t.y&&M.m===t.m)pastTo=t.d-1;
     put(r0,1,MONTHS[M.m-1]+'\n'+thd(String(M.y+543).slice(-2)),xf(font(16,true,'000000'),fill('DBDBDB'),B2,'center',true));
