@@ -7,16 +7,20 @@
  * - ข้อมูลจริงเก็บในไฟล์ "ต้นทาง" (sheets: events, months, settings, logs, snapshots)
  * - ไฟล์ "แสดงผล" ถูกวาดใหม่จากข้อมูลต้นทางทุกครั้งที่มีการแก้ไข (อ่านอย่างเดียว)
  * - กด SAVE แล้วเก็บไฟล์ Excel ในโฟลเดอร์ Backup ไว้ 20 ไฟล์ล่าสุด
+ * - ใครเข้าได้และทำอะไรได้ ตัดสินโดยระบบ Login กลางของ ฝูง.602 (repo eadmin) ทุกคำขอ ดูหัวข้อ "auth" ด้านล่าง
  */
 
 const CFG = {
   SOURCE_ID: '1gB7hh2Zpw7u8_pHcpHujVlfb6JkmGSNLVKx182hVU_g',
   DISPLAY_ID: '10Bj4UuJ6r86p9_bgYRaeUUCsGELGtWt_ktB-4mF3dLI',
   BACKUP_FOLDER_ID: '1czRN-LXGfumODTUmZcyovqM4QQSkAjUj',
-  DEFAULT_CODE: 'operation.slide',   // รหัสเปิดใช้งานเริ่มต้น (เปลี่ยนได้ด้วย setAccessCode)
+  // ระบบ Login กลาง: ที่อยู่ระบบหลังบ้านของระบบ Login (ค่าเดียวกับ backendUrl ในไฟล์ eadmin/docs/assets/config.js)
+  // กรอกในหน้า Apps Script แล้ว Run setup ครั้งเดียว ระบบจำไว้เอง (ช่องนี้ว่างไว้ได้ในโค้ดบน GitHub)
+  LOGIN_URL: '',
+  WEB_CODE: 'CALENDAR',              // รหัสเว็บนี้ในรายชื่อเว็บของหน้า Admin (ต้องตรงกัน)
+  CHECK_SEC: 60,                     // อ่านอย่างเดียว: ถามระบบ Login ซ้ำทุก 60 วินาที / การแก้ไขทุกครั้งถามใหม่เสมอ
   KEEP_BACKUPS: 20,
   KEEP_SNAPS: 20,
-  SESSION_SEC: 3600,                 // ใส่รหัสแล้วใช้ได้ 1 ชั่วโมง
   LOCK_MS: 90000,                    // สิทธิ์แก้ไขหมดอายุถ้าไม่ต่ออายุภายใน 90 วินาที
   PRESENCE_SEC: 25,
   LOG_DAYS: 365,
@@ -38,9 +42,10 @@ function doPost(e) {
   let req = {};
   try {
     req = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    const fn = API[req.action];
+    const fn = Object.prototype.hasOwnProperty.call(API, req.action) ? API[req.action] : null;
     if (!fn) throw err_('bad_action', 'ไม่รู้จักคำสั่ง ' + req.action);
-    const sess = req.action === 'login' ? null : auth_(req.token);
+    const sess = auth_(req.pass, !!FRESH[req.action]);
+    if (EDIT[req.action] && !sess.edit) throw err_('forbidden', 'บัญชีนี้มีสิทธิ์ดูอย่างเดียว (Viewer) แก้ไขแผนไม่ได้');
     return json_(fn(req, sess) || { ok: true });
   } catch (x) {
     const code = (x && x.code) || 'server';
@@ -55,19 +60,14 @@ function err_(code, message) { const e = new Error(message); e.code = code; retu
 
 /* =========================== API =========================== */
 
-const API = {
-  login: function (r) {
-    const name = String(r.name || '').trim().slice(0, 60);
-    if (!name) throw err_('no_name', 'กรุณาใส่ชื่อผู้ใช้งาน');
-    const want = PropertiesService.getScriptProperties().getProperty('CODE_HASH') || sha256_(CFG.DEFAULT_CODE);
-    if (sha256_(String(r.code || '').trim()) !== want) { Utilities.sleep(700); throw err_('bad_code', 'รหัสไม่ถูกต้อง'); }
-    const token = Utilities.getUuid().replace(/-/g, '');
-    CacheService.getScriptCache().put('tok:' + token, JSON.stringify({ name: name }), CFG.SESSION_SEC);
-    return { token: token, name: name, exp: Date.now() + CFG.SESSION_SEC * 1000 };
-  },
+// Editor and Admin only: these change the plan, take the edit lock, or redraw the display file
+const EDIT = { lock: 1, write: 1, save: 1, restore: 1, render: 1 };
+// these ask the login system afresh, not from the copy kept for CFG.CHECK_SEC
+const FRESH = { lock: 1, write: 1, save: 1, restore: 1 };
 
-  load: function () {
-    return { ver: ver_(), state: readState_(), lock: lockGet_() };
+const API = {
+  load: function (r, s) {
+    return { ver: ver_(), state: readState_(), lock: lockGet_(), me: { name: s.name, role: s.role } };
   },
 
   poll: function (r, s) {
@@ -76,22 +76,24 @@ const API = {
     return { ver: ver_(), lock: lockGet_(), peers: presenceAll_(), now: Date.now() };
   },
 
-  leave: function (r) {
+  leave: function (r, s) {
     const tab = String(r.tab || '');
     if (tab) CacheService.getScriptCache().remove('pres:' + tab);
-    lockRelease_(tab);
+    lockRelease_(tab, s.key);
     return { ok: true };
   },
 
   lock: function (r, s) {
     const tab = String(r.tab || '');
     return withLock_(function () {
-      const now = Date.now(), cur = lockGet_();
+      const now = Date.now(), cur = lockGet_(), raw = lockRaw_();
       const busy = cur && cur.until > now && cur.tab !== tab;
-      if (r.mode === 'release') { if (cur && cur.tab === tab) lockSet_(null); return { ok: true, lock: null }; }
+      const mine = raw && raw.tab === tab && raw.token === s.key;          // the same tab, and the same login
+      if (r.mode === 'release') { if (mine) lockSet_(null); return { ok: true, lock: null }; }
       if (busy) return { ok: false, lock: cur };
-      if (r.mode === 'renew' && !(cur && cur.tab === tab)) return { ok: false, lock: cur };
-      const v = { tab: tab, token: r.token, by: s.name, since: (cur && cur.tab === tab) ? cur.since : now, until: now + CFG.LOCK_MS };
+      if (r.mode === 'renew' && !(cur && mine)) return { ok: false, lock: cur };
+      if (cur && cur.tab === tab && !mine) return { ok: false, lock: cur };
+      const v = { tab: tab, token: s.key, by: s.name, since: (cur && cur.tab === tab) ? cur.since : now, until: now + CFG.LOCK_MS };
       lockSet_(v);
       return { ok: true, lock: lockPublic_(v) };
     });
@@ -99,7 +101,7 @@ const API = {
 
   write: function (r, s) {
     return withLock_(function () {
-      requireLock_(r);
+      requireLock_(r, s);
       const st = readState_();
       const touched = { events: false, months: false, settings: false };
       const logs = [];
@@ -131,7 +133,7 @@ const API = {
 
   save: function (r, s) {
     return withLock_(function () {
-      requireLock_(r);
+      requireLock_(r, s);
       const st = readState_();
       st.settings = Object.assign({}, st.settings, { updated: String(r.iso || '') });
       writeState_(st, { settings: true });
@@ -168,7 +170,7 @@ const API = {
 
   restore: function (r, s) {
     return withLock_(function () {
-      requireLock_(r);
+      requireLock_(r, s);
       const snap = snapGet_(String(r.id || ''));
       if (!snap) throw err_('not_found', 'ไม่พบฉบับที่บันทึก');
       const st = { events: {}, months: snap.data.months || {}, settings: snap.data.settings || {} };
@@ -200,10 +202,49 @@ const API = {
 
 /* =========================== auth / lock =========================== */
 
-function auth_(token) {
-  const raw = token && CacheService.getScriptCache().get('tok:' + token);
-  if (!raw) throw err_('auth', 'หมดเวลาใช้งาน กรุณาใส่รหัสใหม่');
-  return JSON.parse(raw);
+/* Who is asking, and may they? Decided by the login system of ฝูง.602 (repo eadmin), never here and never in the page.
+   The page gets a pass for this web from the login system (App.enterWeb) and sends it with every request; this script
+   sends it on to the login system (op web.check) with the code of this web, and gets back the person and the Role in
+   this web: Admin / Editor edit, Viewer looks only. No access, the web closed, the hour over, the password changed, the
+   account taken by another device: refused, every time. The pass is good for that question about this web only: this
+   script never sees the login itself, so it cannot be used for the Admin page or another web.
+   An answer is kept for CFG.CHECK_SEC for the frequent questions that only read (poll); everything that changes the plan
+   asks afresh (FRESH). Only a mark of the pass is kept here, never the pass itself. */
+function loginUrl_() {
+  return String(PropertiesService.getScriptProperties().getProperty('LOGIN_URL') || CFG.LOGIN_URL || '').trim();
+}
+// the address of a deployed Apps Script web app, nothing else: the session is only ever sent there
+function loginUrlOk_(url) { return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url); }
+function auth_(pass, fresh) {
+  pass = String(pass || '');
+  if (!pass || pass.length > 800) throw err_('auth', 'ให้เข้าสู่ระบบ');
+  // a pass for another web: config.js (webCode) and CFG.WEB_CODE do not agree. Said plainly, so it is found at once.
+  let w = '';
+  try { w = String(JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(pass.split('.')[0])).getDataAsString()).w || ''); } catch (x) { w = ''; }
+  if (w && w !== CFG.WEB_CODE) throw err_('wrong_web', 'รหัสเว็บในไฟล์ config.js (' + w + ') ไม่ตรงกับ CFG.WEB_CODE ใน Apps Script (' + CFG.WEB_CODE + ') ให้แก้ให้ตรงกัน');
+  const key = sha256_('3mcal|' + pass).slice(0, 32), cache = CacheService.getScriptCache();
+  if (!fresh) { const hit = cache.get('who:' + key); if (hit) return JSON.parse(hit); }
+  const url = loginUrl_();
+  if (!loginUrlOk_(url)) throw err_('config', 'ยังไม่ได้ตั้งที่อยู่ระบบ Login (CFG.LOGIN_URL แล้ว Run setup)');
+  let j = null;
+  try {
+    const res = UrlFetchApp.fetch(url, { method: 'post', contentType: 'text/plain;charset=utf-8', payload: JSON.stringify({ v: 1, op: 'web.check', pass: pass, web: CFG.WEB_CODE }), muteHttpExceptions: true, followRedirects: true });
+    j = JSON.parse(res.getContentText());
+  } catch (x) { j = null; }
+  if (!j || (!j.ok && !j.error)) throw err_('busy', 'ตรวจสิทธิ์กับระบบ Login ไม่ได้ ลองอีกครั้ง');
+  if (!j.ok) {
+    cache.remove('who:' + key);
+    const c = String(j.error.code || '');
+    // the login is over: the page asks the login system itself and is sent to the login page with the reason
+    if (c === 'auth' || c === 'expired' || c === 'taken') throw err_('auth', String(j.error.message || 'ให้เข้าสู่ระบบใหม่'));
+    if (c === 'no_web' || c === 'web_closed') throw err_(c, String(j.error.message || 'บัญชีนี้ไม่มีสิทธิ์ใช้งานเว็บนี้ ให้ติดต่อ Admin'));
+    throw err_('busy', String(j.error.message || 'ระบบ Login ขัดข้อง ลองอีกครั้ง'));
+  }
+  const u = j.user || {}, role = String(j.role || '');
+  const who = { key: key, name: ((u.rank ? u.rank + ' ' : '') + (u.name || u.username || '')).trim().slice(0, 60), role: role, edit: role === 'Admin' || role === 'Editor' };
+  const left = Math.floor((Number(j.expiresAt) - Date.now()) / 1000);
+  if (left > 1) cache.put('who:' + key, JSON.stringify(who), Math.min(CFG.CHECK_SEC, left));
+  return who;
 }
 function sha256_(t) {
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, t, Utilities.Charset.UTF_8)
@@ -228,12 +269,12 @@ function lockSet_(v) {
   const p = PropertiesService.getScriptProperties();
   if (v) p.setProperty('EDIT_LOCK', JSON.stringify(v)); else p.deleteProperty('EDIT_LOCK');
 }
-function lockRelease_(tab) {
-  withLock_(function () { const c = lockRaw_(); if (c && c.tab === tab) lockSet_(null); });
+function lockRelease_(tab, key) {
+  withLock_(function () { const c = lockRaw_(); if (c && c.tab === tab && c.token === key) lockSet_(null); });
 }
-function requireLock_(r) {
+function requireLock_(r, s) {
   const c = lockRaw_();
-  if (!c || c.until < Date.now() || c.tab !== r.tab || c.token !== r.token)
+  if (!c || c.until < Date.now() || c.tab !== r.tab || c.token !== s.key)
     throw err_('not_lock_holder', 'คุณไม่ได้ถือสิทธิ์แก้ไขอยู่ อาจมีผู้อื่นกำลังแก้ไข');
   c.until = Date.now() + CFG.LOCK_MS; lockSet_(c);
 }
@@ -258,7 +299,7 @@ function presencePut_(tab, name, presence) {
 }
 function sanitizePresence_(p, name) {
   return {
-    name: String(p.name || name || '').slice(0, 60),
+    name: String(name || '').slice(0, 60),             // the name of the account, never one the page made up
     mode: p.mode === 'edit' ? 'edit' : 'view',
     ev: p.ev ? String(p.ev).slice(0, 60) : null,
     cell: p.cell ? String(p.cell).slice(0, 30) : null
@@ -610,12 +651,23 @@ function renderDisplay_() {
 
 /* =========================== one-time setup =========================== */
 
-/** รันครั้งเดียวหลังวางโค้ด: สร้างแท็บ ตั้งรหัสเริ่มต้น ตั้งตัวตั้งเวลา และวาดไฟล์แสดงผล */
+/** รันครั้งเดียวหลังวางโค้ด: สร้างแท็บ จำที่อยู่ระบบ Login ตั้งตัวตั้งเวลา และวาดไฟล์แสดงผล */
 function setup() {
+  const p = PropertiesService.getScriptProperties();
+  const url = String(CFG.LOGIN_URL || '').trim();
+  if (url) {
+    if (!loginUrlOk_(url)) throw new Error('CFG.LOGIN_URL ต้องเป็นที่อยู่ Web app ของระบบ Login (ขึ้นต้น https://script.google.com/macros/s/ ลงท้าย /exec)');
+    p.setProperty('LOGIN_URL', url);
+  }
+  if (!loginUrl_()) throw new Error('ยังไม่ได้กรอก CFG.LOGIN_URL (ที่อยู่ระบบหลังบ้านของระบบ Login) กรอกแล้ว Run setup อีกครั้ง');
+  // ask for the permission to call the login system now, and see that it answers
+  let ok = false;
+  try { ok = JSON.parse(UrlFetchApp.fetch(loginUrl_(), { muteHttpExceptions: true, followRedirects: true }).getContentText()).service === 'eadmin602'; } catch (x) { ok = false; }
+  if (!ok) throw new Error('ติดต่อระบบ Login ที่ ' + loginUrl_() + ' ไม่ได้ ตรวจ CFG.LOGIN_URL แล้ว Run setup อีกครั้ง');
+  Logger.log('ระบบ Login ตอบแล้ว · รหัสเว็บนี้ ' + CFG.WEB_CODE + ' (ต้องตรงกับรายชื่อเว็บในหน้า Admin)');
+  p.deleteProperty('CODE_HASH');                       // the old access code is no longer used
   sheet_('events', EV_COLS); sheet_('months', ['month', 'lanes']); sheet_('settings', ['key', 'value']);
   sheet_('logs', ['at', 'time', 'by', 'action', 'detail']); snapSheet_();
-  const p = PropertiesService.getScriptProperties();
-  if (!p.getProperty('CODE_HASH')) p.setProperty('CODE_HASH', sha256_(CFG.DEFAULT_CODE));
   if (!p.getProperty('VER')) p.setProperty('VER', '1');
   // first install: copy the current plan from Seed.gs (if that file was added) into the empty source sheet
   if (typeof SEED !== 'undefined' && !Object.keys(readState_().events).length) {
@@ -633,13 +685,6 @@ function setup() {
   bump_();
   renderDisplay_();
   Logger.log('ตั้งค่าเสร็จแล้ว');
-}
-
-/** เปลี่ยนรหัสเปิดใช้งาน: แก้ข้อความในวงเล็บแล้วรันฟังก์ชันนี้ */
-function setAccessCode() {
-  const NEW_CODE = 'operation.slide';
-  PropertiesService.getScriptProperties().setProperty('CODE_HASH', sha256_(NEW_CODE));
-  Logger.log('เปลี่ยนรหัสแล้ว');
 }
 
 /** ปลดสิทธิ์แก้ไขที่ค้าง (กรณีฉุกเฉิน) */
