@@ -266,18 +266,15 @@ html .ribbon.pinned{position:sticky}
 </style>
 </head>
 <body>
+<!-- shown instead of the plan when this account may not use this web, or the login system cannot be reached.
+     Who may enter is decided by the login system of ฝูง.602 (eadmin), on every request. -->
 <div class="lock" id="lock" hidden>
-  <form class="lockbox" id="lockForm" autocomplete="off">
+  <div class="lockbox">
     <div class="lockmark" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></div>
     <h2>Master Plan ฝูง.602</h2>
-    <p>ใส่ชื่อผู้ใช้งานและรหัสเพื่อเปิดใช้งาน</p>
-    <label for="lockName" class="lbl">ชื่อผู้ใช้งาน</label>
-    <input id="lockName" type="text" placeholder="ร.อ.ธัญชนิต จินตภากร" autocomplete="name" maxlength="60">
-    <label for="lockIn" class="lbl">รหัสเปิดใช้งาน</label>
-    <input id="lockIn" type="password" placeholder="รหัสเปิดใช้งาน" autocomplete="current-password">
-    <div class="lockerr" id="lockErr" role="alert"></div>
-    <button class="primary" type="submit">เปิดใช้งาน</button>
-  </form>
+    <div class="lockerr" id="lockErr" role="alert">กำลังตรวจสิทธิ์…</div>
+    <button class="primary" type="button" id="lockGo" hidden>กลับหน้าเข้าสู่ระบบ</button>
+  </div>
 </div>
 <div class="wrap" id="app">
   <div class="appbar">
@@ -303,6 +300,9 @@ html .ribbon.pinned{position:sticky}
 <textarea id="typeTrap" aria-label="พิมพ์เพื่อเพิ่มภารกิจในช่องที่เลือก" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0"></textarea>
 
 <script src="config.js"></script>
+<!-- the login system of ฝูง.602 (repo eadmin, same GitHub Pages site): one login for every web -->
+<script src="/eadmin/assets/config.js"></script>
+<script src="/eadmin/assets/app.js"></script>
 <script>
 try{if(navigator.maxTouchPoints>1||'ontouchstart' in window)document.documentElement.classList.add('touch')}catch(_){}
 (function(){
@@ -348,19 +348,33 @@ function hasFont_unused(n){try{const c=document.createElement('canvas').getConte
 // TH SarabunPSK is embedded in the page (all four styles), so sizes match the Excel original 1:1
 document.documentElement.style.setProperty('--fs',1);
 
-let REC='';try{REC=localStorage.getItem('mp_name')||''}catch(e){}
+// the name of the account that is signed in (column ชื่อ-สกุล of LOGIN DATABASE), from the login system; shown to others and written in the history
+let REC='';
 // ---------- server: Google Apps Script web app (URL in config.js) ----------
 const CONF=window.MP_CONFIG||{};
 const TAB='t'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); // this open tab
-let TOKEN='',TOKEN_EXP=0;
-try{const t=JSON.parse(localStorage.getItem('mp_tok')||'null');if(t&&t.exp>Date.now()){TOKEN=t.token;TOKEN_EXP=t.exp}}catch(e){}
+// The login of this browser (ระบบ Login กลาง). The page gets from the login system a pass for this web (CONF.webCode)
+// and sends it with every request; the back end of this web asks the login system whether it may go on, and as what
+// (Admin / Editor edit, Viewer looks only). The session itself never goes to the back end of this web.
+const AUTH=window.App||null;
+function SESS(){const s=AUTH&&AUTH.session();return s?s.token:''}
+let PASS='',PASS_OF='';
+function PASSV(){return PASS_OF&&PASS_OF===SESS()?PASS:''}
+async function getPass(){
+  const s=SESS();if(!s)return'';if(PASS_OF===s&&PASS)return PASS;
+  const r=await AUTH.enterWeb(CONF.webCode||'');PASS=r.pass||'';PASS_OF=s;S.role=(r.web&&r.web.role)||S.role;return PASS;
+}
 async function api(action,payload){
   if(!CONF.apiUrl)throw {code:'no_api',message:'ยังไม่ได้ตั้งค่า apiUrl ในไฟล์ config.js'};
   let res,j;
-  try{res=await fetch(CONF.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action,token:TOKEN,tab:TAB},payload||{}))})}
+  try{res=await fetch(CONF.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action,pass:PASSV(),tab:TAB},payload||{}))})}
   catch(e){throw {code:'network',message:'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจสอบอินเทอร์เน็ต'}}
   try{j=await res.json()}catch(e){throw {code:'network',message:'เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง'}}
-  if(j&&j.error){if(j.error.code==='auth')setTimeout(onAuthLost,0);throw j.error}
+  if(j&&j.error){
+    if(j.error.code==='auth')setTimeout(onAuthLost,0);
+    else if(j.error.code==='no_web'||j.error.code==='web_closed'||j.error.code==='wrong_web')setTimeout(()=>denied(j.error.message),0);
+    else if(j.error.code==='forbidden')setTimeout(()=>{if(S.canWrite){S.canWrite=false;S.editing=false;draft=null;drawEditor();render();toast(j.error.message,6000)}},0);
+    throw j.error}
   return j;
 }
 // writes from one burst of actions go to the server as one batch
@@ -371,13 +385,18 @@ let renderT=0;function scheduleRender(){clearTimeout(renderT);renderT=setTimeout
 function blobToB64(b){return new Promise((ok,no)=>{const fr=new FileReader();fr.onload=()=>ok(String(fr.result).split(',')[1]||'');fr.onerror=no;fr.readAsDataURL(b)})}
 async function loadState(){
   const r=await api('load');const o={};Object.values(r.state.events||{}).forEach(e=>{o[e.id]=e});
+  if(r.me){REC=String(r.me.name||'');S.role=String(r.me.role||'');const cw=S.role==='Admin'||S.role==='Editor';if(S.canWrite&&!cw){S.editing=false;draft=null;drawEditor()}S.canWrite=cw}
   S.events=o;S.months=r.state.months||{};S.settings=Object.assign({unit:'แผนภารกิจ',notes:[]},r.state.settings||{});
   const had=lockMine();S.lockDoc=r.lock;S.ver=r.ver;S.db=true;S.loaded=true;
   if(had&&!lockMine()&&S.editing){S.editing=false;toast('สิทธิ์แก้ไขหมดอายุ ต้องกดโหมดแก้ไขใหม่',5000)}
   if(!drag)render();if(draft)updPreview();
 }
-function onAuthLost(){TOKEN='';TOKEN_EXP=0;try{localStorage.removeItem('mp_tok')}catch(e){}S.editing=false;draft=null;drawEditor();showLock(true);const e=$('lockErr');if(e)e.textContent='หมดเวลาใช้งาน กรุณาใส่รหัสใหม่'}
-const S={events:{},months:{},settings:null,offset:0,editing:false,canWrite:false,db:null,loaded:false,armed:null,pending:0};
+// the login is over (its hour, the password changed, another device took the account): the login system is asked
+// directly, and sends this browser to the login page with the reason; it comes back here after the next login
+function onAuthLost(){if(!AUTH||!SESS()){if(AUTH)AUTH.toLogin();return}S.editing=false;draft=null;drawEditor();AUTH.api('me').then(()=>{PASS_OF='';return getPass()}).catch(()=>{})}
+// this account has no access to this web, or the web is closed (ข้อ 1.14.3.1)
+function denied(msg){closePop();S.editing=false;S.canWrite=false;draft=null;drawEditor();PV=null;drawPV();showLock(true,msg||'บัญชีนี้ไม่มีสิทธิ์ใช้งานเว็บนี้ ให้ติดต่อ Admin',true)}
+const S={events:{},months:{},settings:null,offset:0,editing:false,canWrite:false,role:'',db:null,loaded:false,armed:null,pending:0};
 // edit mode always starts off: editing needs the one-at-a-time edit lock
 
 function today(){const d=new Date();return{y:d.getFullYear(),m:d.getMonth()+1,d:d.getDate()}}
@@ -432,7 +451,7 @@ setInterval(async()=>{ // keep the lock alive while working; give it up when idl
   if(!needsLock()){releaseLock();return}
   try{const r=await api('lock',{mode:'renew'});S.lockDoc=r.lock;if(!r.ok&&S.editing){S.editing=false;toast('สิทธิ์แก้ไขหมดอายุ ต้องกดโหมดแก้ไขใหม่',5000)}render()}catch(e){}
 },30e3);
-window.addEventListener('pagehide',()=>{try{if(TOKEN&&CONF.apiUrl&&navigator.sendBeacon)navigator.sendBeacon(CONF.apiUrl,new Blob([JSON.stringify({action:'leave',token:TOKEN,tab:TAB})],{type:'text/plain'}))}catch(e){}});
+window.addEventListener('pagehide',()=>{try{if(SESS()&&CONF.apiUrl&&navigator.sendBeacon)navigator.sendBeacon(CONF.apiUrl,new Blob([JSON.stringify({action:'leave',pass:PASSV(),tab:TAB})],{type:'text/plain'}))}catch(e){}});
 function renderLockBar(){
   const b=$('lockBar');if(!b)return;const o=lockOther();
   if(o&&S.canWrite){const x=new Date(o.since||Date.now());b.className='lockbar';b.hidden=false;b.textContent=(o.by||'ผู้ใช้อื่น')+' กำลังแก้ไขแผนอยู่ (ตั้งแต่ '+pad(x.getHours())+':'+pad(x.getMinutes())+' น.) · ระหว่างนี้คุณดูได้อย่างเดียว แผนจะอัปเดตให้เห็นทันที และแก้ไขได้เมื่อเขาแก้เสร็จ';}
@@ -449,12 +468,12 @@ function myPresence(){
   let ev=null,cell=null;
   if(draft&&canEdit()){if(draft.id)ev=draft.id;else cell=draft.month+':'+draft.lane+':'+draft.start}
   else if(drag)ev=drag.id;else if(isEd()&&UI.sel)ev=UI.sel;else if(isEd()&&UI.cell)cell=UI.cell.k+':'+UI.cell.l+':'+UI.cell.d;else if(isEd()&&S.hover)cell=S.hover;
-  return{name:REC||S._acct||'',mode:lockMine()?'edit':'view',ev,cell};
+  return{name:REC,mode:lockMine()?'edit':'view',ev,cell};
 }
 // every few seconds: send what I'm doing, receive who else is here, the edit lock and the data version
 let lastPoll=0,polling=false;
 async function pollOnce(force){
-  if(!TOKEN||polling||!$('lock').hidden)return;
+  if(!SESS()||polling||!$('lock').hidden)return;
   const now=Date.now(),gap=document.hidden?30e3:(myPresence().mode==='edit'?2500:4000);
   if(!force&&now-lastPoll<gap)return;
   polling=true;lastPoll=now;
@@ -493,13 +512,9 @@ $('sheet').addEventListener('pointerleave',()=>{S.hover=null});
 async function joinRoom(){pollOnce(true)}
 
 // ---------- recorder name + change log ----------
-// The typed name is shown to people using the page only; it never appears in PREVIEW, PDF or Excel.
-function setRec(v){REC=(v||'').trim().slice(0,60);try{localStorage.setItem('mp_name',REC)}catch(e){}}
-function needName(then){
-  if(REC||!S.canWrite)return true;
-  // the recorder is always the user name from the sign-in screen
-  showLock(true);$('lockErr').textContent='กรุณาใส่ชื่อผู้ใช้งานอีกครั้ง';return false;
-}
+// The name of the account is shown to people using the page only; it never appears in PREVIEW, PDF or Excel.
+// The back end writes the name of the account itself into the history, whatever the page sends.
+function needName(then){return true}
 const FLABEL={text:'ชื่อภารกิจ',status:'สถานะ',type:'ประเภท',month:'เดือน',start:'วันเริ่ม',end:'วันสิ้นสุด',lane:'แถว',rows:'ความสูง',size:'ขนาดตัวอักษร',bold:'ตัวหนา',italic:'ตัวเอียง',underline:'ขีดเส้นใต้',color:'สีตัวหนังสือ',fill:'สีพื้น'};
 function fv(k,v){if(k==='status')return STATUS[v]||v;if(k==='type')return (TYPES[v]||{}).label||v;if(k==='lane')return v+1;if(k==='month'){const [y,m]=String(v).split('-').map(Number);return MABBR[m-1]+String(y+543).slice(-2)}if(k==='bold'||k==='italic')return v?'ใช่':'ไม่';if(k==='underline')return (ULS.find(u=>u[0]===(v||''))||['',v])[1];if(k==='color'||k==='fill')return v||'อัตโนมัติ';return String(v).replace(/\n/g,' ')}
 function diffText(a,b){const out=[];Object.keys(FLABEL).forEach(k=>{const x=a[k]==null?'':a[k],y=b[k]==null?'':b[k];if(k in b&&String(x)!==String(y))out.push(FLABEL[k]+': '+fv(k,x)+' → '+fv(k,y))});return out.join(' · ')}
@@ -602,15 +617,15 @@ function svHTML(){
 function grp(cap,inner,cls){return '<div class="grp'+(cls?' '+cls:'')+'"><div class="row">'+inner+'</div><div class="cap">'+cap+'</div></div>'}
 function ribbonHTML(){
   const e=selEv(),o=lockOther(),canW=S.canWrite&&S.db;
-  const who=REC?'<span>ผู้ใช้งาน: <b style="color:var(--fg);font-weight:600">'+esc(REC)+'</b></span>':'';
+  const who=REC?'<span>ผู้ใช้งาน: <b style="color:var(--fg);font-weight:600">'+esc(REC)+'</b>'+(S.role?' · '+esc(S.role):'')+'</span>':'';
   if(!isEd()){
     let h='<div class="rbar"><div class="rscroll">'+
-      grp('พิมพ์ / ส่งออก','<button id="pvBtn">'+IC.eye+'PREVIEW</button><button id="expBtn" aria-haspopup="menu">'+IC.out+'ส่งออก '+IC.caret+'</button>')+
+      (S.canWrite?grp('พิมพ์ / ส่งออก','<button id="pvBtn">'+IC.eye+'PREVIEW</button><button id="expBtn" aria-haspopup="menu">'+IC.out+'ส่งออก '+IC.caret+'</button>'):'')+
       grp('ฉบับและประวัติ',(canW?'<button id="snapBtn">ฉบับที่บันทึก</button>':'')+'<button id="logBtn"'+(S.db?'':' disabled')+'>ประวัติการแก้ไข</button>')+
-      grp('หน้าจอ','<button id="lockBtn" class="ghost" title="ล็อกหน้านี้ ต้องใส่ชื่อและรหัสใหม่">ล็อกหน้าจอ</button>')+
+      grp('บัญชี','<button id="lockBtn" class="ghost" title="ออกจากระบบ Login กลาง (ทุกเว็บและทุกแท็บของเบราว์เซอร์นี้)">ออกจากระบบ</button>')+
       '</div>';
     if(canW)h+='<div class="ract"><div class="row">'+(S.dirty&&!o?'<button id="closeBtn" title="ออกฉบับจากการแก้ไขที่ค้างไว้">'+IC.check+'ปิดงาน / ออกฉบับ</button>':'')+'<button class="primary" id="editBtn"'+(o?' disabled':'')+'>'+IC.pen+'แก้ไขแผน</button></div><div class="cap">'+(o?esc(o.by||'ผู้ใช้อื่น')+' กำลังแก้ไขอยู่':S.dirty?'มีการแก้ไขที่ยังไม่ได้ออกฉบับ':'แก้ไขได้ครั้งละหนึ่งคน คนอื่นยังดูได้')+'</div></div>';
-    h+='</div><div class="statusline"><span>'+(!S.db?'กำลังโหลด…':'ดูได้อย่างเดียว · แตะภารกิจเพื่อดูรายละเอียด')+'</span><span class="sp"></span>'+who+'</div>';
+    h+='</div><div class="statusline"><span>'+(!S.db?'กำลังโหลด…':S.canWrite?'ดูได้อย่างเดียว · แตะภารกิจเพื่อดูรายละเอียด':'บัญชีนี้มีสิทธิ์ดูอย่างเดียว (Viewer) · แตะภารกิจเพื่อดูรายละเอียด')+'</span><span class="sp"></span>'+who+'</div>';
     return h;
   }
   const ctx=!!e,tyc=e?fillColor(e):'#fff';
@@ -960,7 +975,7 @@ async function discardEdits(){
   if(Q.length||Qp){try{await (Qp||flushQ())}catch(e){}}
   try{await withLock(()=>restoreSnap(S.lastSnap,'undo'));S.lastSnap.since=Date.now()}catch(e){toast('ทิ้งการแก้ไขไม่สำเร็จ')}
 }
-function lockScreen(){closePop();S.editing=false;clearHistory();PV=null;drawPV();draft=null;drawEditor();api('leave').catch(()=>{});S.lockDoc=null;TOKEN='';TOKEN_EXP=0;try{localStorage.removeItem('mp_tok')}catch(e){}showLock(true)}
+async function lockScreen(){closePop();S.editing=false;clearHistory();PV=null;drawPV();draft=null;drawEditor();S.lockDoc=null;try{await api('leave')}catch(e){}if(AUTH)AUTH.signOut('')}
 
 // ---------- ribbon + dock buttons ----------
 function keepFocus(ev){const bt=ev.target.closest('button');if(bt&&!bt.disabled&&!ev.target.closest('#namebar'))ev.preventDefault()}
@@ -1336,7 +1351,11 @@ function zipStore(files){
 
 // ---------- PREVIEW ----------
 let PV=null;
+// Viewer: looks only, no download (ข้อ 1.3). The buttons are hidden; this is the second guard in the page.
+// The plan itself is on the screen for anyone allowed to look, so a page cannot fully stop a copy.
+function mayExport(){if(S.canWrite)return true;toast('บัญชีนี้มีสิทธิ์ดูอย่างเดียว (Viewer) ส่งออกไฟล์ไม่ได้',5000);return false}
 async function openPreview(){
+  if(!mayExport())return;
   PV={busy:true};drawPV();
   try{PV.c=await renderSheetCanvas();PV.url=PV.c.canvas.toDataURL('image/png')}catch(e){PV.err='จัดหน้าไม่สำเร็จ'}
   PV.busy=false;drawPV();
@@ -1369,12 +1388,12 @@ function drawPV(){
 window.addEventListener('resize',()=>{if(PV&&!PV.busy)drawPV()});
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&PV){PV=null;drawPV()}});
 let busyX=false;
-async function exportPDF(c){if(busyX)return;busyX=true;toast('กำลังสร้าง PDF…',20000);try{c=c||await renderSheetCanvas();const b=await buildPDF(c);await offer(fileBase()+'.pdf',b)}catch(e){toast('สร้าง PDF ไม่สำเร็จ')}finally{busyX=false}}
-async function exportXLS(){if(busyX)return;busyX=true;try{const b=buildXLSX();await offer(fileBase()+'.xlsx',b)}catch(e){toast('สร้างไฟล์ Excel ไม่สำเร็จ')}finally{busyX=false}}
+async function exportPDF(c){if(busyX||!mayExport())return;busyX=true;toast('กำลังสร้าง PDF…',20000);try{c=c||await renderSheetCanvas();const b=await buildPDF(c);await offer(fileBase()+'.pdf',b);api('exported',{kind:'pdf',filename:fileBase()+'.pdf'}).catch(()=>{})}catch(e){toast('สร้าง PDF ไม่สำเร็จ')}finally{busyX=false}}
+async function exportXLS(){if(busyX||!mayExport())return;busyX=true;try{const b=buildXLSX();await offer(fileBase()+'.xlsx',b);api('exported',{kind:'xlsx',filename:fileBase()+'.xlsx'}).catch(()=>{})}catch(e){toast('สร้างไฟล์ Excel ไม่สำเร็จ')}finally{busyX=false}}
 
 // ---------- SAVE (keeps a dated copy you can restore) ----------
 async function doSave(){
-  if(!S.db||!S.canWrite)return;if(!REC){needName(doSave);return}
+  if(!S.db||!S.canWrite)return;
   if(!lockMine()){return withLock(doSave)}
   if(Q.length||Qp){try{await (Qp||flushQ())}catch(e){}}
   const t=today(),iso=t.y+'-'+pad(t.m)+'-'+pad(t.d),lbl=pad(t.d)+'_'+pad(t.m)+'_'+String(t.y+543).slice(-2);
@@ -1421,26 +1440,20 @@ async function closeWork(){
   S.editing=false;S.armed=null;clearHistory();render();maybeRelease();
 }
 
-// ---------- access code (soft lock in this browser; who can open the page is set in Share) ----------
-function unlockedUntil(){return TOKEN?TOKEN_EXP:0}
-function showLock(on){$('lock').hidden=!on;$('app').hidden=on;if(on){setTimeout(()=>{const n=$('lockName'),i=$('lockIn');if(n)n.value=REC||'';if(i)i.value='';(n&&!n.value?n:i).focus()},30)}}
-$('lockForm').addEventListener('submit',async ev=>{ev.preventDefault();const nm=$('lockName').value.trim();
-  if(!nm){$('lockErr').textContent='กรุณาใส่ชื่อผู้ใช้งาน';$('lockName').focus();return}
-  const btn=$('lockForm').querySelector('button');btn.disabled=true;$('lockErr').textContent='กำลังตรวจสอบ…';
-  try{const r=await api('login',{name:nm,code:$('lockIn').value.trim()});
-    TOKEN=r.token;TOKEN_EXP=r.exp;try{localStorage.setItem('mp_tok',JSON.stringify({token:TOKEN,exp:TOKEN_EXP}))}catch(e){}
-    setRec(r.name||nm);$('lockErr').textContent='';showLock(false);startApp();}
-  catch(e){$('lockErr').textContent=(e&&e.message)||'เข้าใช้งานไม่สำเร็จ';$('lockIn').select()}
-  finally{btn.disabled=false}});
-showLock(unlockedUntil()<Date.now()||!REC);
-// session lasts 1 hour; 5 minutes before it ends, warn if there are edits not yet SAVEd
+// ---------- the login (ระบบ Login กลาง ฝูง.602) ----------
+// No login in this browser: to the login page, and back here after it. The hour of a login, a login from another
+// device and signing out in another tab are watched by App.watch (eadmin/assets/app.js), the same as on every web.
+function showLock(on,msg,back){$('lock').hidden=!on;$('app').hidden=on;if(on){$('lockErr').textContent=msg||'';$('lockGo').hidden=!back}}
+$('lockGo').onclick=()=>{if(AUTH)location.href=AUTH.loginUrl().split('?')[0]};
+function sessionLeft(){const s=AUTH&&AUTH.session();return s?s.exp-AUTH.now():0}
+// 5 minutes before the hour ends, warn if there are edits not yet closed (ปิดงาน / ออกฉบับ)
 function tickSession(){
   if(S._lockShown!==!!lockOther()){S._lockShown=!!lockOther();render()}
-  if(!$('lock').hidden)return;const left=unlockedUntil()-Date.now();
-  if(left<=0){closePop();S.editing=false;clearHistory();PV=null;drawPV();draft=null;drawEditor();NF=null;drawNoteFmt();SN=null;drawSnaps();LG=null;drawLogs();$('expBar').hidden=true;showLock(true);toast('ครบ 1 ชั่วโมง กรุณาใส่รหัสใหม่');return}
+  if(!$('lock').hidden)return;const left=sessionLeft();
+  if(left<=0)return;                                 // App.watch takes this browser to the login page
   const warn=left<=5*60e3&&S.canWrite&&(S.dirty||!!draft||!!NF);
   $('expBar').hidden=!warn;
-  if(warn){const m=Math.floor(left/60e3),sec=Math.floor(left%60e3/1e3);$('expTxt').textContent='อีก '+m+':'+pad(sec)+' นาทีหน้านี้จะล็อก ต้องใส่รหัสใหม่ · '+(draft||NF?'มีหน้าต่างแก้ไขที่ยังไม่กดบันทึก และ':'')+'มีการแก้ไขที่ยังไม่ได้ปิดงาน / ออกฉบับ'}
+  if(warn){const m=Math.floor(left/60e3),sec=Math.floor(left%60e3/1e3);$('expTxt').textContent='อีก '+m+':'+pad(sec)+' นาทีหมดเวลาใช้งาน ต้องเข้าสู่ระบบใหม่ · '+(draft||NF?'มีหน้าต่างแก้ไขที่ยังไม่กดบันทึก และ':'')+'มีการแก้ไขที่ยังไม่ได้ปิดงาน / ออกฉบับ'}
 }
 setInterval(tickSession,1000);
 $('expSave').onclick=async()=>{if(draft&&isEd()){saveDraft()}if(NF){$('nfSave')&&$('nfSave').click()}await closeWork();tickSession()};
@@ -1449,12 +1462,26 @@ $('expSave').onclick=async()=>{if(draft&&isEd()){saveDraft()}if(NF){$('nfSave')&
 render();
 let started=false;
 async function startApp(){
-  S.canWrite=true;S.uid=null;S._acct='';
-  try{await loadState()}catch(e){if(e&&e.code!=='auth'){$('sheet').innerHTML='<div class="empty">'+esc((e&&e.message)||'โหลดแผนไม่สำเร็จ')+'</div>'}return}
+  S.canWrite=false;S.uid=null;
+  showLock(true,'กำลังตรวจสิทธิ์…');
+  try{await getPass()}catch(e){
+    // no access, or the web closed: the message of the login system; the login over: App has gone to the login page
+    if(e&&(e.code==='no_web'||e.code==='web_closed')){denied(e.message);return}
+    showLock(true,(e&&e.message)||'ตรวจสิทธิ์ไม่สำเร็จ',false);setTimeout(startApp,10000);return}
+  try{await loadState()}catch(e){
+    if(e&&(e.code==='auth'||e.code==='no_web'||e.code==='web_closed'||e.code==='wrong_web'))return;
+    showLock(true,(e&&e.message)||'โหลดแผนไม่สำเร็จ',false);setTimeout(startApp,10000);return}
+  showLock(false);
   if(!started){started=true;joinRoom()}else pollOnce(true);
   loadLastSnap();
 }
-if(TOKEN&&REC&&TOKEN_EXP>Date.now())startApp();
+if(!AUTH||!AUTH.hasBackend)showLock(true,'ไม่พบระบบ Login กลาง (eadmin) หน้านี้จึงยังใช้งานไม่ได้',false);
+else if(!AUTH.session())AUTH.toLogin();
+else{
+  // the login of this browser changed in another tab: signed out, or another account signed in
+  AUTH.watch((s,was)=>{if(!s){AUTH.toLogin();return}if(was&&s.token!==was)location.reload()});
+  startApp();
+}
 })();
 </script>
 </body>
