@@ -348,7 +348,7 @@ function hasFont_unused(n){try{const c=document.createElement('canvas').getConte
 // TH SarabunPSK is embedded in the page (all four styles), so sizes match the Excel original 1:1
 document.documentElement.style.setProperty('--fs',1);
 
-// the name of the account that is signed in (ยศ ชื่อ-สกุล), from the login system; shown to others and written in the history
+// the name of the account that is signed in (column ชื่อ-สกุล of LOGIN DATABASE), from the login system; shown to others and written in the history
 let REC='';
 // ---------- server: Google Apps Script web app (URL in config.js) ----------
 const CONF=window.MP_CONFIG||{};
@@ -1388,8 +1388,8 @@ function drawPV(){
 window.addEventListener('resize',()=>{if(PV&&!PV.busy)drawPV()});
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&PV){PV=null;drawPV()}});
 let busyX=false;
-async function exportPDF(c){if(busyX||!mayExport())return;busyX=true;toast('กำลังสร้าง PDF…',20000);try{c=c||await renderSheetCanvas();const b=await buildPDF(c);await offer(fileBase()+'.pdf',b)}catch(e){toast('สร้าง PDF ไม่สำเร็จ')}finally{busyX=false}}
-async function exportXLS(){if(busyX||!mayExport())return;busyX=true;try{const b=buildXLSX();await offer(fileBase()+'.xlsx',b)}catch(e){toast('สร้างไฟล์ Excel ไม่สำเร็จ')}finally{busyX=false}}
+async function exportPDF(c){if(busyX||!mayExport())return;busyX=true;toast('กำลังสร้าง PDF…',20000);try{c=c||await renderSheetCanvas();const b=await buildPDF(c);await offer(fileBase()+'.pdf',b);api('exported',{kind:'pdf',filename:fileBase()+'.pdf'}).catch(()=>{})}catch(e){toast('สร้าง PDF ไม่สำเร็จ')}finally{busyX=false}}
+async function exportXLS(){if(busyX||!mayExport())return;busyX=true;try{const b=buildXLSX();await offer(fileBase()+'.xlsx',b);api('exported',{kind:'xlsx',filename:fileBase()+'.xlsx'}).catch(()=>{})}catch(e){toast('สร้างไฟล์ Excel ไม่สำเร็จ')}finally{busyX=false}}
 
 // ---------- SAVE (keeps a dated copy you can restore) ----------
 async function doSave(){

@@ -17,7 +17,7 @@ const CFG = {
   // ระบบ Login กลาง: ที่อยู่ระบบหลังบ้านของระบบ Login (ค่าเดียวกับ backendUrl ในไฟล์ eadmin/docs/assets/config.js)
   // กรอกในหน้า Apps Script แล้ว Run setup ครั้งเดียว ระบบจำไว้เอง (ช่องนี้ว่างไว้ได้ในโค้ดบน GitHub)
   LOGIN_URL: '',
-  WEB_CODE: 'CALENDAR',              // รหัสเว็บนี้ในรายชื่อเว็บของหน้า Admin (ต้องตรงกัน)
+  WEB_CODE: 'WEB1',              // รหัสเว็บนี้ในรายชื่อเว็บของหน้า Admin (ต้องตรงกัน)
   CHECK_SEC: 60,                     // อ่านอย่างเดียว: ถามระบบ Login ซ้ำทุก 60 วินาที / การแก้ไขทุกครั้งถามใหม่เสมอ
   KEEP_BACKUPS: 20,
   KEEP_SNAPS: 20,
@@ -61,9 +61,9 @@ function err_(code, message) { const e = new Error(message); e.code = code; retu
 /* =========================== API =========================== */
 
 // Editor and Admin only: these change the plan, take the edit lock, or redraw the display file
-const EDIT = { lock: 1, write: 1, save: 1, restore: 1, render: 1 };
+const EDIT = { lock: 1, write: 1, save: 1, restore: 1, render: 1, exported: 1 };
 // these ask the login system afresh, not from the copy kept for CFG.CHECK_SEC
-const FRESH = { lock: 1, write: 1, save: 1, restore: 1 };
+const FRESH = { lock: 1, write: 1, save: 1, restore: 1, exported: 1 };
 
 const API = {
   load: function (r, s) {
@@ -188,6 +188,14 @@ const API = {
     });
   },
 
+  // a PDF or Excel file was made in the page: into the history with the name of the account (no edit lock needed)
+  exported: function (r, s) {
+    const kind = r.kind === 'pdf' ? 'EXPORT TO PDF' : r.kind === 'xlsx' ? 'EXPORT TO EXCEL' : '';
+    if (!kind) throw err_('bad_request', 'ไม่รู้จักชนิดไฟล์');
+    appendLogs_([[Date.now(), s.name, kind, String(r.filename || '').slice(0, 120)]]);
+    return { ok: true };
+  },
+
   listLogs: function (r) {
     return { list: logsList_(Math.min(1000, Number(r.limit) || 300)) };
   },
@@ -241,7 +249,8 @@ function auth_(pass, fresh) {
     throw err_('busy', String(j.error.message || 'ระบบ Login ขัดข้อง ลองอีกครั้ง'));
   }
   const u = j.user || {}, role = String(j.role || '');
-  const who = { key: key, name: ((u.rank ? u.rank + ' ' : '') + (u.name || u.username || '')).trim().slice(0, 60), role: role, edit: role === 'Admin' || role === 'Editor' };
+  // the recorder: column "ชื่อ-สกุล" of the account's row in LOGIN DATABASE, found by the login system (Username as fallback)
+  const who = { key: key, name: String(u.name || u.username || '').trim().slice(0, 60), role: role, edit: role === 'Admin' || role === 'Editor' };
   const left = Math.floor((Number(j.expiresAt) - Date.now()) / 1000);
   if (left > 1) cache.put('who:' + key, JSON.stringify(who), Math.min(CFG.CHECK_SEC, left));
   return who;
@@ -419,11 +428,12 @@ function logsList_(n) {
   const from = Math.max(2, last - n + 1);
   return sh.getRange(from, 1, last - from + 1, 5).getValues().reverse().map(function (r) { return { at: Number(r[0]), by: String(r[2]), action: String(r[3]), detail: String(r[4]) }; });
 }
+// an edit since time t (a file export is in the history too, but is no edit)
 function logsSince_(t) {
   const sh = sheet_('logs', ['at', 'time', 'by', 'action', 'detail']);
   const last = sh.getLastRow(); if (last < 2) return false;
   const from = Math.max(2, last - 50);
-  return sh.getRange(from, 1, last - from + 1, 1).getValues().some(function (r) { return Number(r[0]) > t; });
+  return sh.getRange(from, 1, last - from + 1, 4).getValues().some(function (r) { return Number(r[0]) > t && String(r[3]).indexOf('EXPORT TO ') !== 0; });
 }
 function pruneLogs() {
   const sh = sheet_('logs', ['at', 'time', 'by', 'action', 'detail']);
