@@ -188,7 +188,7 @@ button.ghost:hover:not(:disabled){background:var(--soft)}
 button.danger.arm{background:var(--danger);color:#fff;border-color:var(--danger)}
 .ribbon button.danger,.dock button.danger{border-color:transparent}
 kbd{font-family:var(--f-ui);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--soft);color:var(--muted)}
-.ribbon{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.ribbon{position:sticky;top:var(--ops602-h,env(safe-area-inset-top,0px));z-index:30;background:var(--panel);border:1px solid var(--line);border-radius:10px}
 .ribbon.edit{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .rbar{display:flex;align-items:stretch}
 .rscroll{display:flex;flex-wrap:wrap;align-items:stretch;row-gap:8px;padding:6px;flex:1;min-width:0}
@@ -1484,5 +1484,7 @@ else{
 }
 })();
 </script>
+<!-- แถบ OPS 602 ด้านบน (ซ้าย: กลับหน้ารวม, ขวา: REFRESH) ไฟล์กลางของ repo app ใช้ร่วมกันทุกระบบ ห้ามลบ -->
+<script src="/app/back.js" defer></script>
 </body>
 </html>
