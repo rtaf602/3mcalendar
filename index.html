@@ -43,6 +43,7 @@ button:disabled{opacity:.45;cursor:default}
 
 .month{display:grid;grid-template-columns:114px var(--gut,0px) repeat(31,minmax(44px,1fr));grid-auto-rows:minmax(calc(20pt*var(--fs)*1.33),auto);border:2px solid #000;margin-bottom:10px;position:relative}
 .editing .month{--gut:30px}
+.wm{position:absolute;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden;font-family:var(--f-sheet);font-weight:700;line-height:1;white-space:nowrap;color:rgba(255,64,64,.22)}
 .cell{border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);min-width:0}
 .cell.lc,.ev.lc,.dh.lc{border-right:0}
 .cell.lr,.ev.lr,.mlabel.lr,.gut.lr{border-bottom:0}
@@ -620,7 +621,7 @@ function ribbonHTML(){
   const who=REC?'<span>ผู้ใช้งาน: <b style="color:var(--fg);font-weight:600">'+esc(REC)+'</b>'+(S.role?' · '+esc(S.role):'')+'</span>':'';
   if(!isEd()){
     let h='<div class="rbar"><div class="rscroll">'+
-      (S.canWrite?grp('พิมพ์ / ส่งออก','<button id="pvBtn">'+IC.eye+'PREVIEW</button><button id="expBtn" aria-haspopup="menu">'+IC.out+'ส่งออก '+IC.caret+'</button>'):'')+
+      (S.canWrite?grp('พิมพ์ / ส่งออก','<button id="pvBtn">'+IC.eye+'PREVIEW</button><button id="draftBtn" title="ฉบับร่าง: ตัวหนังสือ DRAFT ตรงกลางเดือนที่ 2">ฉบับ DRAFT</button><button id="expBtn" aria-haspopup="menu">'+IC.out+'ส่งออก '+IC.caret+'</button>'):'')+
       grp('ฉบับและประวัติ',(canW?'<button id="snapBtn">ฉบับที่บันทึก</button>':'')+'<button id="logBtn"'+(S.db?'':' disabled')+'>ประวัติการแก้ไข</button>')+
       grp('บัญชี','<button id="lockBtn" class="ghost" title="ออกจากระบบ Login กลาง (ทุกเว็บและทุกแท็บของเบราว์เซอร์นี้)">ออกจากระบบ</button>')+
       '</div>';
@@ -678,7 +679,7 @@ function sheetHTML(){
   let h='<div class="title">';
   h+=(ed?'<input id="unitIn" type="text" value="'+esc(H.unit)+'" aria-label="ชื่อหน่วย">':esc(H.unit));
   h+=esc(H.rest)+'<span class="sub">'+esc(H.sub)+'</span></div>';
-  ms.forEach(M=>{h+=monthHTML(M,t)});
+  ms.forEach((M,i)=>{let mh=monthHTML(M,t);if(S._draft&&S._exp&&i===1)mh=mh.slice(0,-6)+'<div class="wm" aria-hidden="true" style="font-size:calc('+(lanesOf(M.key)+1)+'*20pt*var(--fs)*1.33*.8)">DRAFT</div></div>';h+=mh});
   h+='<div class="legend"><b>หมายเหตุ</b>'+LEGEND.map(k=>'<span class="sw"><i style="background:'+TYPES[k].fill+'"></i>'+TYPES[k].label+'</span>').join('')+'</div>';
   h+='<div class="notes">';
   if(ed){H.notes.forEach((n,i)=>{h+='<div class="nl"><input type="text" id="nlab'+i+'" data-nlab="'+i+'" value="'+esc(n.label||'')+'" placeholder="หัวข้อ" aria-label="หัวข้อหมายเหตุ" style="'+noteCSS(noteFmt(n,'l'))+'"><button data-nfmt="'+i+'" data-part="l" title="รูปแบบของหัวข้อ">Aa</button><input type="text" id="note'+i+'" data-note="'+i+'" value="'+esc(n.text)+'" title="ใส่ **ข้อความ** เพื่อทำตัวหนาเฉพาะคำ" aria-label="ข้อความหมายเหตุ" style="'+noteCSS(noteFmt(n,'t'))+'"><button data-nfmt="'+i+'" data-part="t" title="รูปแบบของข้อความ">Aa</button><button data-ndel="'+i+'">ลบ</button></div>'});h+='<div class="nadd"><button data-nadd="1">+ เพิ่มบรรทัดหมายเหตุ</button> <span style="font-family:var(--f-ui);font-size:12px;color:#666">ปุ่ม Aa หลังหัวข้อและหลังข้อความ ตั้งรูปแบบแยกกันได้ (ขนาด สี ตัวหนา ตัวเอียง ขีดเส้นใต้ สีพื้น) · ใส่ **ข้อความ** เพื่อทำตัวหนาเฉพาะคำ</span></div>'}
@@ -988,6 +989,7 @@ function toolClick(ev){
   if(id==='closeBtn'){closePop();closeWork();return}
   if(id==='discardBtn'){discardEdits();return}
   if(id==='pvBtn'){openPreview();return}
+  if(id==='draftBtn'){openPreview(true);return}
   if(id==='expBtn'){openPop(b,'<button class="mi" data-v="pdf">EXPORT TO PDF <small>1 หน้า A4</small></button><button class="mi" data-v="xlsx">EXPORT TO EXCEL <small>.xlsx</small></button>',v=>{if(v==='pdf')exportPDF();else exportXLS()});return}
   if(id==='snapBtn'){openSnaps();return}
   if(id==='logBtn'){openLogs();return}
@@ -1354,8 +1356,9 @@ let PV=null;
 // Viewer: looks only, no download (ข้อ 1.3). The buttons are hidden; this is the second guard in the page.
 // The plan itself is on the screen for anyone allowed to look, so a page cannot fully stop a copy.
 function mayExport(){if(S.canWrite)return true;toast('บัญชีนี้มีสิทธิ์ดูอย่างเดียว (Viewer) ส่งออกไฟล์ไม่ได้',5000);return false}
-async function openPreview(){
+async function openPreview(draftMode){
   if(!mayExport())return;
+  if(typeof draftMode==='boolean')S._draft=draftMode;
   PV={busy:true};drawPV();
   try{PV.c=await renderSheetCanvas();PV.url=PV.c.canvas.toDataURL('image/png')}catch(e){PV.err='จัดหน้าไม่สำเร็จ'}
   PV.busy=false;drawPV();
@@ -1365,7 +1368,7 @@ function drawPV(){
   if(!PV){if(m)m.remove();return}
   if(!m){m=document.createElement('div');m.id='pvm';document.body.appendChild(m)}
   const P=paperMM();
-  let h='<div class="pv" role="dialog" aria-modal="true" aria-labelledby="pvT"><div class="pvbar"><h2 id="pvT">PREVIEW · 1 หน้า</h2>';
+  let h='<div class="pv" role="dialog" aria-modal="true" aria-labelledby="pvT"><div class="pvbar"><h2 id="pvT">PREVIEW · 1 หน้า'+(S._draft?' · <span style="color:#C62828">ฉบับ DRAFT</span>':'')+'</h2>';
   h+='<label class="hint" for="pvSize">กระดาษ</label><select id="pvSize">'+Object.keys(PAPERS).map(s=>'<option'+(PAPER.size===s?' selected':'')+'>'+s+'</option>').join('')+'</select>';
   h+='<select id="pvOrient" aria-label="แนวกระดาษ"><option value="landscape"'+(PAPER.orient==='landscape'?' selected':'')+'>แนวนอน</option><option value="portrait"'+(PAPER.orient==='portrait'?' selected':'')+'>แนวตั้ง</option></select>';
   h+='<button id="pvXls">EXPORT TO EXCEL</button><button id="pvPdf" class="primary">EXPORT TO PDF</button><button id="pvClose">ปิด</button></div>';
@@ -1381,14 +1384,14 @@ function drawPV(){
   h+='</div>';m.innerHTML=h;
   const setP=()=>{PAPER={size:$('pvSize').value,orient:$('pvOrient').value};try{localStorage.setItem('mp_paper',JSON.stringify(PAPER))}catch(e){}openPreview()};
   $('pvSize').onchange=setP;$('pvOrient').onchange=setP;
-  $('pvClose').onclick=()=>{PV=null;drawPV()};
+  $('pvClose').onclick=()=>{PV=null;S._draft=false;drawPV()};
   $('pvPdf').onclick=()=>exportPDF(PV&&PV.c);
   $('pvXls').onclick=()=>exportXLS();
 }
 window.addEventListener('resize',()=>{if(PV&&!PV.busy)drawPV()});
-document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&PV){PV=null;drawPV()}});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&PV){PV=null;S._draft=false;drawPV()}});
 let busyX=false;
-async function exportPDF(c){if(busyX||!mayExport())return;busyX=true;toast('กำลังสร้าง PDF…',20000);try{c=c||await renderSheetCanvas();const b=await buildPDF(c);await offer(fileBase()+'.pdf',b);api('exported',{kind:'pdf',filename:fileBase()+'.pdf'}).catch(()=>{})}catch(e){toast('สร้าง PDF ไม่สำเร็จ')}finally{busyX=false}}
+async function exportPDF(c){if(busyX||!mayExport())return;busyX=true;toast('กำลังสร้าง PDF…',20000);try{c=c||await renderSheetCanvas();const fn=fileBase()+(S._draft?' DRAFT':'')+'.pdf';const b=await buildPDF(c);await offer(fn,b);api('exported',{kind:'pdf',filename:fn}).catch(()=>{})}catch(e){toast('สร้าง PDF ไม่สำเร็จ')}finally{busyX=false}}
 async function exportXLS(){if(busyX||!mayExport())return;busyX=true;try{const b=buildXLSX();await offer(fileBase()+'.xlsx',b);api('exported',{kind:'xlsx',filename:fileBase()+'.xlsx'}).catch(()=>{})}catch(e){toast('สร้างไฟล์ Excel ไม่สำเร็จ')}finally{busyX=false}}
 
 // ---------- SAVE (keeps a dated copy you can restore) ----------
